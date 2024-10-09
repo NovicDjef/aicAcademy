@@ -18,32 +18,45 @@ const AddUser = () => {
   const [statut, setStatut] = useState('');
 
   return (
-    <SafeAreaView style={styles.containerTT  }>
+    <SafeAreaView style={styles.containerTT}>
         <Stack.Screen options={{ headerShown: false }} />
-      <ScrollView>
-        <View style={styles.header}>
+        <View style={[styles.header, {marginTop: 44,}]}>
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="black" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Nouvelle enregistrement</Text>
         </View>
+      <ScrollView style={{  backgroundColor: COLORS.white }}>
+       
 
        <View style={styles.imageContainer}>
         <Ionicons name="receipt-outline" size={100} color={COLORS.primary} />
        </View>
 
        <View style={styles.inputContainer}>
-       <TextInput style={styles.input} placeholder="Nom" />
+       <View style={styles.textinputs}>
+        <TextInput style={styles.input} placeholder="Nom" />
+       </View>
+       <View style={styles.textinputs}>
         <TextInput style={styles.input} placeholder="Prenoms" />
+       </View>
         
         <TouchableOpacity style={styles.input}>
           <Text style={styles.inputText}>Sexe</Text>
           <Ionicons name="chevron-down" size={24} color="gray" />
         </TouchableOpacity>
-
-        <TextInput style={styles.input} placeholder="Adresse" />
-        <TextInput style={styles.input} placeholder="Niveau d'etude" />
-
+        <View style={styles.textinputs}>
+         <TextInput style={styles.input} placeholder="Adresse" />
+        </View>
+        <View style={styles.textinputs}>
+          <TextInput style={styles.input} placeholder="Dernier Diplome" />
+        </View>
+        <View style={styles.textinputs}>
+          <TextInput style={styles.input} placeholder="Specialite" />
+        </View>
+        <View style={styles.textinputs}>
+          <TextInput style={styles.input} placeholder="Montant" />
+        </View>
         <View style={styles.statutContainer}>
           <Text style={styles.statutLabel}>Statut</Text>
           <View style={styles.checkboxContainer}>
@@ -121,9 +134,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   input: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 5,
-    padding: 15,
+    backgroundColor: COLORS.gray10,
+    borderRadius: 10,
+    padding: 10,
     marginBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -166,7 +179,7 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: COLORS.primary,
-    borderRadius: 5,
+    borderRadius: 10,
     padding: 15,
     alignItems: 'center',
   },
@@ -175,6 +188,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  textinputs: {
+    padding: 1
+  }
 });
 
 export default AddUser;

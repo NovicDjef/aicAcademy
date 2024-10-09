@@ -10,6 +10,9 @@ export const COLORS = {
   secondary: '#FC2626',
   red: '#bc0000', // Red
   purple: '#8f06e4',
+  gray1: '#f7f7f7',
+  gray2: '#f2f2f2',
+  gray3: '#ebebeb',
   gray10: '#E5E5E5',
   gray20: '#CCCCCC',
   gray30: '#A1A1A1',

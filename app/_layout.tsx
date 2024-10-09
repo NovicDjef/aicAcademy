@@ -32,6 +32,7 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <View style={{ flex: 1, backgroundColor: 'white' }}>
         <Stack>
+          <Stack.Screen name="LoginScreen" options={{ headerShown: false }} />
           <Stack.Screen name="index" options={{ headerShown: false }} />
           {/* <Stack.Screen name="+not-found" /> */}
         </Stack>
