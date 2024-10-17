@@ -1,9 +1,10 @@
-import { View, StyleSheet, TouchableOpacity, Text, FlatList } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, FlatList, Alert } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES } from '@/constants/theme';
 import { StatusBar } from 'expo-status-bar';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const dataCategories = [
   { id: 0, name: 'Tous' },
@@ -23,7 +24,7 @@ const dataItems = [
 export default function Index() {
   const [selectedCategory, setSelectedCategory] = useState(0); // Default to 'Tous'
   const [filteredItems, setFilteredItems] = useState([]);
-
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   useEffect(() => {
     filterItems();
   }, [selectedCategory]);
@@ -37,10 +38,18 @@ export default function Index() {
       setFilteredItems(filteredData);
     }
   };
-
+  const handleLogout = async () => {
+    // Clear tokens from storage on logout
+    await AsyncStorage.removeItem('access_token');
+    await AsyncStorage.removeItem('refresh_token');
+    setIsAuthenticated(false);
+    Alert.alert('Déconnexion réussie', 'Vous êtes maintenant déconnecté.');
+    router.push('/'); 
+  };
   function renderMenu() {
     return (
       <>
+       
         <StatusBar style="dark" />
         <View style={{ alignItems: 'center' }}>
           <FlatList
@@ -104,8 +113,13 @@ export default function Index() {
    <>
      <Stack.Screen options={{ headerShown: false }} />
     <View style={styles.container} >
-      <View style={{ flexDirection: 'row', marginTop: 44, backgroundColor: COLORS.white }}>
+      <View style={{ flexDirection: 'row', marginTop: 64, backgroundColor: COLORS.white }}>
         <Text style={[styles.header, { top: -8 }]}>Enregistrement</Text>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            {/* <Text style={styles.loginButtonText}>Déconnexion</Text> */}
+            <Ionicons name="log-out-outline" size={22} color={COLORS.white} style={{ left: 2 }} />
+          </TouchableOpacity>
+       
       </View>
       <View style={{ marginTop: -10, backgroundColor: COLORS.white }}>
         {renderMenu()}
@@ -128,8 +142,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
-    textAlign: 'center',
-    marginRight: 32,
+    left: 10,
   },
   listContainer: {
     flex: 1,
@@ -187,5 +200,22 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  logoutButton: {
+    top: -10,
+    right: 10,
+    backgroundColor: COLORS.secondary,
+    width: 30,
+    height: 30,
+    borderRadius: 25,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loginButtonText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: 'bold',
+    left: -5,
   },
 });
