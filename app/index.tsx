@@ -141,7 +141,8 @@ export default function LoginScreen() {
             <Image
               source={require('../assets/images/aic2.png')}
               style={styles.logo} />
-            <Text style={styles.title}>Connexion aic Academy</Text>
+           <View style={{}}>
+           <Text style={styles.title}>Connexion aic Academy</Text>
             <Text style={styles.subtitle}>
               Bienvenue ! Connectez-vous à l'aide  de votre adresse e-mail pour continuer..
             </Text>
@@ -175,6 +176,7 @@ export default function LoginScreen() {
                 {loading ? <ActivityIndicator size="small" color="#fff" /> : 'Connexion'}
               </Text>
             </TouchableOpacity>
+           </View>
           </>
         ) : (
           <>
@@ -196,6 +198,7 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#fff',
   },
+  
   logo: {
     position: 'absolute',
     top: 80,  // Adjust this value to control how close the image is to the top of the screen

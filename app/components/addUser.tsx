@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,29 +8,77 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Alert, // Pour afficher des alertes
+  Alert,
+  ActivityIndicator, // Pour afficher des alertes
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; 
 import { router, Stack } from 'expo-router';
 import { COLORS } from '@/constants/theme';
 import { Dropdown } from 'react-native-element-dropdown';
 import axios from 'axios'; // Assurez-vous d'avoir installé axios pour l'API POST
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AddUser = () => {
-
 
 const [lastname, setLastname] = useState('');
 const [firstname, setFirstname] = useState('');
 const [gender, setGender] = useState('');
 const [address, setAddress] = useState('');
 const [grade, setGrade] = useState('');
+const [phone, setPhone] = useState('');
 const [formation_id, setFormationId] = useState('');
 const [paid_amount, setPaidAmount] = useState('');
+const [loading, setLoading] = useState(false); 
+const [showPaymentForm, setShowPaymentForm] = useState(false);  // État pour afficher les champs de paiement
+const [formations, setFormations] = useState([]);  // Stocke les formations récupérées
+const [errorMessage, setErrorMessage] = useState(''); // Pour gérer les erreurs de validation
 
+
+const fetchFormations = async () => {
+  try {
+    const token = await AsyncStorage.getItem('access_token');
+    if (!token) {
+      Alert.alert('Erreur', 'Vous devez être connecté pour récupérer les formations.');
+      return;
+    }
+
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    };
+
+    const response = await axios.get('https://students.aic.cm/api/v1/formations', config);
+
+    if (response.status === 200 && response.data && response.data.data) {
+      const formationsData = response.data.data;
+
+      if (Array.isArray(formationsData)) {
+        const formattedFormations = formationsData.map(formation => ({
+          label: formation.name + "   " + "  " + formation.price + " Frs"  || 'Nom inconnu',
+          value: (formation.id || '').toString()
+        }));
+        setFormations(formattedFormations);
+      } else {
+        Alert.alert('Erreur', 'Le format des données de formations est invalide.');
+      }
+    } else {
+      Alert.alert('Erreur', 'Impossible de récupérer les formations. Format de réponse inattendu.');
+    }
+  } catch (error) {
+    Alert.alert('Erreur', `Une erreur est survenue lors de la récupération des formations: ${error.message}`);
+  }
+};
+
+ // Afficher le formulaire de paiement lorsqu'on clique sur "Ajouter paiement"
+ const handleShowPaymentForm = () => {
+  setShowPaymentForm(true);
+}; 
 
 const handleSubmit = async () => {
-  if (!lastname || !firstname || !gender || !address || !grade || !formation_id || !paid_amount) {
-    Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
+  // Validation des champs obligatoires
+  if (!lastname || !firstname || !gender || !address || !grade) {
+    Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires.');
     return;
   }
 
@@ -40,21 +88,48 @@ const handleSubmit = async () => {
     gender,
     address,
     grade,
-    formation_id: parseInt(formation_id),
-    paid_amount: parseFloat(paid_amount)
+    phone,
+    // Ajoutez formation_id et paid_amount seulement s'ils sont renseignés
+    ...(formation_id && { formation_id: parseInt(formation_id) }),
+    ...(paid_amount && { paid_amount: parseFloat(paid_amount) })
   };
 
+  console.log('Données à envoyer:', userData);
+
+  setLoading(true);
   try {
-    const response = await axios.post('https://students.aic.cm/api/v1/students', userData);
-    if (response.status === 201) {
+    const token = await AsyncStorage.getItem('access_token');
+    if (!token) {
+      Alert.alert('Erreur', 'Vous devez être connecté pour ajouter un étudiant.');
+      return;
+    }
+
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    };
+
+    const response = await axios.post('https://students.aic.cm/api/v1/students', userData, config);
+    
+    if (response.status === 200) {
       Alert.alert('Succès', 'Étudiant enregistré avec succès.');
       router.push('/Enregistrement');
     } else {
-      Alert.alert('Erreur', 'Une erreur est survenue lors de l\'enregistrement.');
+      Alert.alert('Erreur', `Une erreur est survenue lors de l'enregistrement. Statut: ${response.status}`);
     }
   } catch (error) {
-    console.error(error);
-    Alert.alert('Erreur', 'Impossible d\'enregistrer l\'étudiant.');
+    console.error('Erreur détaillée:', error);
+    if (error.response) {
+      Alert.alert('Erreur', `Impossible d'enregistrer l'étudiant. Statut: ${error.response.status}, Message: ${JSON.stringify(error.response.data)}`);
+    } else if (error.request) {
+      Alert.alert('Erreur', 'Aucune réponse reçue du serveur. Vérifiez votre connexion Internet.');
+    } else {
+      Alert.alert('Erreur', `Erreur lors de la configuration de la requête: ${error.message}`);
+    }
+  } finally {
+    setLoading(false);
   }
 };
 
@@ -63,6 +138,20 @@ const genderOptions = [
   { label: 'Femme', value: 'FEMALE' },
 ];
 
+useEffect(() => {
+  fetchFormations();
+}, []);
+
+const validatePaidAmount = (value) => {
+  const numericValue = parseFloat(value); 
+  setPaidAmount(value);
+
+  if (numericValue < 1000 || numericValue > 12500) {
+    setErrorMessage('Le montant doit être entre 1000 et 12500 FCFA.');
+  } else {
+    setErrorMessage(''); 
+};
+}
   return (
     <SafeAreaView style={styles.containerTT}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -97,6 +186,17 @@ const genderOptions = [
             placeholder="Prénom"
             value={firstname}
             onChangeText={setFirstname}
+          />
+          </View>
+          <View style={styles.textinputs}>
+          {/* <Text style={styles.label}>Votre Prenom</Text> */}
+            
+          <TextInput
+            style={styles.input}
+            placeholder="Numero telephone"
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType='numeric'
           />
           </View>
 
@@ -138,63 +238,49 @@ const genderOptions = [
           />
           </View>
 
-          <View style={styles.textinputs}>
-          {/* <Text style={styles.label}>Votre Specialite</Text> */}
-          <TextInput
-            style={styles.input}
-            placeholder="ID de formation"
-            value={formation_id}
-            onChangeText={setFormationId}
-            keyboardType="numeric"
-          />
+        {/* Bouton pour afficher les champs de paiement */}
+        <View style={styles.statutContainer}>
+            <TouchableOpacity
+              style={styles.checkbox}
+              onPress={handleShowPaymentForm} >
+              <Text style={styles.checkboxLabel}>Ajouter paiement</Text>
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.textinputs}>
-          {/* <Text style={styles.label}>Montant</Text> */}
+          {showPaymentForm && (
+      <>
+        <View style={styles.dropdownContainer}>
+          <Dropdown
+            style={styles.dropdown}
+            placeholderStyle={styles.placeholderStyle}
+            selectedTextStyle={styles.selectedTextStyle}
+            data={formations}
+            maxHeight={300}
+            labelField="label"
+            valueField="value"
+            placeholder="Sélectionnez une formation"
+            value={formation_id}
+            onChange={(item) => {
+              setFormationId(item.value);
+            }}
+          />
+        </View>
+        <View style={styles.textinputs}>
           <TextInput
             style={styles.input}
             placeholder="Montant payé"
             value={paid_amount}
-            onChangeText={setPaidAmount}
+            onChangeText={validatePaidAmount} 
             keyboardType="numeric"
           />
-          </View>
-
-          {/* <View style={styles.statutContainer}>
-            <Text style={styles.statutLabel}>Statut</Text>
-            <View style={styles.checkboxContainer}>
-              <TouchableOpacity
-                style={styles.checkbox}
-                onPress={() => setStatut('payee')}
-              >
-                {statut === 'payee' && <Ionicons name="checkmark" size={16} style={styles.checkboxInner} />}
-              </TouchableOpacity>
-              <Text style={styles.checkboxLabel}>Payée</Text>
-            </View>
-
-            <View style={styles.checkboxContainer}>
-              <TouchableOpacity
-                style={styles.checkbox}
-                onPress={() => setStatut('impayee')}
-              >
-                {statut === 'impayee' && <Ionicons name="checkmark" size={16} style={styles.checkboxInner} />}
-              </TouchableOpacity>
-              <Text style={styles.checkboxLabel}>Impayée</Text>
-            </View>
-
-            <View style={styles.checkboxContainer}>
-              <TouchableOpacity
-                style={styles.checkbox}
-                onPress={() => setStatut('avance')}
-              >
-                {statut === 'avance' && <Ionicons name="checkmark" size={16} style={styles.checkboxInner} />}
-              </TouchableOpacity>
-              <Text style={styles.checkboxLabel}>Avancé</Text>
-            </View>
-          </View> */}
+        </View>
+      </>
+    )}
 
           <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-            <Text style={styles.buttonText}>Enregistrer</Text>
+            <Text style={styles.buttonText}>
+              {loading ? <ActivityIndicator size="small" color="#fff" /> : 'Enregistrer'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -251,20 +337,18 @@ const styles = StyleSheet.create({
     marginRight: 20,
   },
   checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 1,
-    borderColor: 'black',
-    marginRight: 5,
-    justifyContent: 'center',
+    // marginRight: 5,
+    justifyContent: "center",
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.primary2
   },
   checkboxInner: {
     color: COLORS.primary,
   },
   checkboxLabel: {
-    fontSize: 16,
+   // fontSize: 16,
+    padding: 8
   },
   button: {
     backgroundColor: COLORS.primary,

@@ -1,56 +1,109 @@
-import { View, StyleSheet, TouchableOpacity, Text, FlatList, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, FlatList, Alert, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONTS, SIZES } from '@/constants/theme';
+import { COLORS } from '@/constants/theme';
 import { StatusBar } from 'expo-status-bar';
 import { router, Stack } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 import FloatingAddButton from './components/FloatingAddButton';
 
 const dataCategories = [
   { id: 0, name: 'Tous' },
-  { id: 1, name: 'Enregistrements' },
-  { id: 2, name: 'Avancer' },
-  { id: 3, name: 'Payée' },
-];
-
-const dataItems = [
-  { id: 1, name: 'NGOKA Franck', status: 'Payée', amount: null },
-  { id: 2, name: 'NGOKA Franck', status: 'Avancer', amount: '1000.XAF' },
-  { id: 3, name: 'NGOKA Franck', status: 'Enregistrements', amount: null },
-  { id: 4, name: 'NGOKA Franck', status: 'Payée', amount: null },
-  { id: 5, name: 'NGOKA Franck', status: 'Payée', amount: null },
+  { id: 1, name: 'Non payé' },
+  { id: 2, name: 'Partiellement payé' },
+  { id: 3, name: 'Payé' },
 ];
 
 export default function Index() {
   const [selectedCategory, setSelectedCategory] = useState(0); // Default to 'Tous'
   const [filteredItems, setFilteredItems] = useState([]);
+  const [students, setStudents] = useState([]);  // Pour stocker les étudiants récupérés
+  const [loading, setLoading] = useState(false); // Pour gérer l'indicateur de chargement
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+ 
+
   useEffect(() => {
     filterItems();
-  }, [selectedCategory]);
+  }, [selectedCategory, students]);
+
+  const fetchStudents = async () => {
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      if (!token) {
+        Alert.alert('Erreur', 'Vous devez être connecté pour récupérer les étudiants.');
+        return;
+      }
+  
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+  
+      const response = await axios.get('https://students.aic.cm/api/v1/students', config);
+      if (response.status === 200 && response.data && response.data.data && response.data.data.data) {
+        setStudents(response.data.data.data);  // Correction ici
+        console.log("Étudiants récupérés:", response.data.data.data);
+      } else {
+        console.log("Réponse inattendue:", response.data);
+        Alert.alert('Erreur', 'Format de données inattendu lors de la récupération des étudiants.');
+      }
+    } catch (error) {
+      console.error("Erreur lors de la récupération des étudiants:", error);
+      Alert.alert('Erreur', 'Une erreur est survenue lors de la récupération des étudiants.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Assurez-vous que cette fonction est appelée dans un useEffect
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+  
+  // Ajoutez ceci pour déboguer
+  useEffect(() => {
+    console.log("État actuel des étudiants:", students);
+  }, [students]);
 
   const filterItems = () => {
     if (selectedCategory === 0) {
-      setFilteredItems(dataItems);
+      setFilteredItems(students);
     } else {
-      const selectedStatus = dataCategories.find(category => category.id === selectedCategory).name;
-      const filteredData = dataItems.filter(item => item.status === selectedStatus);
+      const statusMap = {
+        1: null,
+        2: 'PARTIALLY_PAID',
+        3: 'PAID'
+      };
+      const selectedStatus = statusMap[selectedCategory];
+      const filteredData = students.filter(student => 
+        selectedStatus === null 
+          ? student.payment_status === null 
+          : student.payment_status === selectedStatus
+      );
       setFilteredItems(filteredData);
     }
+    console.log("Éléments filtrés:", filteredItems);
   };
+  
+  useEffect(() => {
+    filterItems();
+  }, [selectedCategory, students]);
+
   const handleLogout = async () => {
-    // Clear tokens from storage on logout
     await AsyncStorage.removeItem('access_token');
     await AsyncStorage.removeItem('refresh_token');
     setIsAuthenticated(false);
     Alert.alert('Déconnexion réussie', 'Vous êtes maintenant déconnecté.');
     router.push('/'); 
   };
+
   function renderMenu() {
     return (
       <>
-       
         <StatusBar style="dark" />
         <View style={{ alignItems: 'center' }}>
           <FlatList
@@ -77,12 +130,18 @@ export default function Index() {
             )}
           />
         </View>
-       
       </>
     );
   }
-
   function renderItems() {
+    if (loading) {
+      return <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 50 }} />;
+    }
+  
+    if (filteredItems.length === 0) {
+      return <Text style={{ textAlign: 'center', marginTop: 50 }}>Aucun étudiant trouvé</Text>;
+    }
+  
     return (
       <FlatList
         data={filteredItems}
@@ -90,38 +149,55 @@ export default function Index() {
         renderItem={({ item }) => (
           <View style={styles.itemContainer}>
             <View style={styles.itemTextContainer}>
-              <Text style={styles.itemName}>{item.name}</Text>
-              <Text style={styles.itemSubText}>Licence génie logiciel</Text>
-              <Text style={styles.itemSubTextSemiBold}>Masculin  |  Logbessou</Text>
-              {item.amount && <Text style={styles.itemAmount}>{item.amount}</Text>}
+              <Text style={styles.itemName}>{`${item.lastname} ${item.firstname}`}</Text>
+              <Text style={styles.itemSubText}>{item.grade}</Text>
+              <Text style={styles.itemSubTextSemiBold}>{`${item.gender_tr} | ${item.address}`}</Text>
+              {item.paid_amount && <Text style={styles.itemAmount}>{`${item.paid_amount} FCFA`}</Text>}
             </View>
             <View
               style={[
                 styles.statusContainer,
-                { backgroundColor: item.status === 'Payée' ? '#BCF5CB' : item.status === 'Avancer' ? '#FDD7AA' : '#D0E8FF' },
+                { backgroundColor: getStatusColor(item.payment_status) },
               ]}
             >
-              <Text style={[styles.statusText, 
-                { color: item.status === 'Payée' ? '#18632e' : item.status === 'Avancer' ? '#f67419' : '#1a4bb3' }
-              ]}>{item.status}</Text>
+              <Text style={[
+                styles.statusText, 
+                { color: getStatusTextColor(item.payment_status) }
+              ]}>
+                {item.payment_status_tr || 'Non payé'}
+              </Text>
             </View>
           </View>
         )}
       />
     );
   }
+const getStatusColor = (status) => {
+  switch(status) {
+    case 'PAID': return '#BCF5CB';
+    case 'PARTIALLY_PAID': return '#FDD7AA';
+    default: return '#D0E8FF';
+  }
+};
+
+const getStatusTextColor = (status) => {
+  switch(status) {
+    case 'PAID': return '#18632e';
+    case 'PARTIALLY_PAID': return '#f67419';
+    default: return '#1a4bb3';
+  }
+};
+
 
   return (
    <>
      <Stack.Screen options={{ headerShown: false }} />
-    <View style={styles.container} >
+    <View style={styles.container}>
       <View style={{ flexDirection: 'row', marginTop: 64, backgroundColor: COLORS.white }}>
         <Text style={[styles.header, { top: -8 }]}>Enregistrement</Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            {/* <Text style={styles.loginButtonText}>Déconnexion</Text> */}
-            <Ionicons name="log-out-outline" size={22} color={COLORS.white} style={{ left: 2 }} />
-          </TouchableOpacity>
-       
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={22} color={COLORS.white} style={{ left: 2 }} />
+        </TouchableOpacity>
       </View>
       <View style={{ marginTop: -10, backgroundColor: COLORS.white }}>
         {renderMenu()}
@@ -193,17 +269,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
-  floatingButton: {
-    position: 'absolute',
-    bottom: 30,
-    right: 30,
-    backgroundColor: COLORS.primary,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   logoutButton: {
     top: -10,
     right: 10,
@@ -215,10 +280,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loginButtonText: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: 'bold',
-    left: -5,
-  },
 });
+
