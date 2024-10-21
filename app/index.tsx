@@ -94,69 +94,98 @@ export default function LoginScreen() {
     }
   };
 
+  // const handleLogout = async () => {
+  //   // Clear tokens from storage on logout
+  //   await AsyncStorage.removeItem('access_token');
+  //   await AsyncStorage.removeItem('refresh_token');
+  //   setIsAuthenticated(false);
+  //   Alert.alert('Déconnexion réussie', 'Vous êtes maintenant déconnecté.');
+  //   router.push('/'); // Redirect to login screen
+  // };
+
   const handleLogout = async () => {
-    // Clear tokens from storage on logout
-    await AsyncStorage.removeItem('access_token');
-    await AsyncStorage.removeItem('refresh_token');
-    setIsAuthenticated(false);
-    Alert.alert('Déconnexion réussie', 'Vous êtes maintenant déconnecté.');
-    router.push('/'); // Redirect to login screen
+    try {
+      // Récupérer le token d'accès
+      const accessToken = await AsyncStorage.getItem('access_token');
+  
+      if (accessToken) {
+        // Configurer l'en-tête d'autorisation
+        const config = {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        };
+  
+        // Appeler l'API de déconnexion
+        await axios.post('https://students.aic.cm/api/v1/logout', {}, config);
+      }
+  
+      // Supprimer les tokens du stockage
+      await AsyncStorage.removeItem('access_token');
+      await AsyncStorage.removeItem('refresh_token');
+  
+      // Mettre à jour l'état d'authentification (si vous utilisez un contexte d'authentification)
+      setIsAuthenticated(false);
+  
+      Alert.alert('Déconnexion réussie', 'Vous êtes maintenant déconnecté.');
+      router.replace('/'); // Rediriger vers l'écran de connexion
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+      Alert.alert('Erreur de déconnexion', 'Une erreur est survenue lors de la déconnexion. Veuillez réessayer.');
+    }
   };
 
   return (
-    <View style={styles.container}>
-      {!isAuthenticated ? (
-        <>
-          <Image
-            source={require('../assets/images/aic2.png')}
-            style={styles.logo}
-          />
-          <Text style={styles.title}>Connexion aic Academy</Text>
-          <Text style={styles.subtitle}>
-            Bienvenue ! Connectez-vous à l'aide  de votre adresse e-mail pour continuer..
-          </Text>
+    <>
+      <View style={styles.container}>
+        {!isAuthenticated ? (
+          <>
+            <Image
+              source={require('../assets/images/aic2.png')}
+              style={styles.logo} />
+            <Text style={styles.title}>Connexion aic Academy</Text>
+            <Text style={styles.subtitle}>
+              Bienvenue ! Connectez-vous à l'aide  de votre adresse e-mail pour continuer..
+            </Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Adresse électronique"
-            placeholderTextColor={COLORS.gray30}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-
-          <View style={styles.passwordContainer}>
             <TextInput
-              style={styles.inputPassword}
-              placeholder="Mot de passe"
+              style={styles.input}
+              placeholder="Adresse électronique"
               placeholderTextColor={COLORS.gray30}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}  
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <Text style={styles.showPasswordText}>
-                {showPassword ? <Ionicons name="eye-off" size={24} color={COLORS.gray30} /> : <Ionicons name="eye" size={24} color={COLORS.gray30} />}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none" />
+
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.inputPassword}
+                placeholder="Mot de passe"
+                placeholderTextColor={COLORS.gray30}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword} />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Text style={styles.showPasswordText}>
+                  {showPassword ? <Ionicons name="eye-off" size={24} color={COLORS.gray30} /> : <Ionicons name="eye" size={24} color={COLORS.gray30} />}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}>
+              <Text style={styles.loginButtonText}>
+                {loading ? <ActivityIndicator size="small" color="#fff" /> : 'Connexion'}
               </Text>
             </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}>
-            <Text style={styles.loginButtonText}>
-              {loading ? <ActivityIndicator size="small" color="#fff" /> : 'Connexion'}
-            </Text>
-          </TouchableOpacity>
-        </>
-      ) : (
-        <>
-          <Text style={styles.title}>Vous êtes connecté !</Text>
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogout}>
-            <Text style={styles.loginButtonText}>Déconnexion</Text>
-          </TouchableOpacity>
-        </>
-      )}
-    </View>
+          </>
+        ) : (
+          <>
+            <Text style={styles.title}>Vous êtes connecté !</Text>
+            <TouchableOpacity style={styles.loginButton} onPress={handleLogout}>
+              <Text style={styles.loginButtonText}>Déconnexion</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    </>
   );
 }
 
@@ -169,7 +198,7 @@ const styles = StyleSheet.create({
   },
   logo: {
     position: 'absolute',
-    top: 130,  // Adjust this value to control how close the image is to the top of the screen
+    top: 80,  // Adjust this value to control how close the image is to the top of the screen
     alignSelf: 'center',
     width: 300,
     height: 300,

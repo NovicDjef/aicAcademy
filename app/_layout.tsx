@@ -5,7 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import FloatingAddButton from './components/FloatingAddButton';
+// import FloatingAddButton from './components/FloatingAddButton';
 import { View } from 'react-native';
 import { ButtonProvider, useButtonContext } from './ButtonContext';
 
@@ -37,7 +37,7 @@ function Layout() {
           <Stack.Screen name="index" options={{ headerShown: false }} />
         </Stack>
       </View>
-      <FloatingAddButton />
+      {/* <FloatingAddButton /> */}
     </ThemeProvider>
   );
 }

@@ -5,6 +5,7 @@ import { COLORS, FONTS, SIZES } from '@/constants/theme';
 import { StatusBar } from 'expo-status-bar';
 import { router, Stack } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import FloatingAddButton from './components/FloatingAddButton';
 
 const dataCategories = [
   { id: 0, name: 'Tous' },
@@ -76,6 +77,7 @@ export default function Index() {
             )}
           />
         </View>
+       
       </>
     );
   }
@@ -127,6 +129,7 @@ export default function Index() {
       <View style={styles.listContainer}>
         {renderItems()}
       </View>
+      <FloatingAddButton />
     </View>
    </>
   );
