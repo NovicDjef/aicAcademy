@@ -82,6 +82,18 @@ const handleSubmit = async () => {
     return;
   }
 
+  // Validation du numéro de téléphone : doit contenir exactement 9 chiffres
+  if (!/^\d{9}$/.test(phone)) {
+    Alert.alert('Erreur', 'Le numéro de téléphone doit contenir exactement 9 chiffres.');
+    return;
+  }
+
+  // Validation du montant payé : doit être entre 1000 et 12500 FCFA
+  if (paid_amount && (paid_amount < 1000 || paid_amount > 12500)) {
+    Alert.alert('Erreur', 'Le montant payé doit être compris entre 1000 FCFA et 12500 FCFA veyez saisir un montant correct SVP.');
+    return;
+  }
+
   const userData = {
     lastname,
     firstname,
@@ -122,7 +134,7 @@ const handleSubmit = async () => {
   } catch (error) {
     console.error('Erreur détaillée:', error);
     if (error.response) {
-      Alert.alert('Erreur', `Impossible d'enregistrer l'étudiant. Statut: ${error.response.status}, Message: ${JSON.stringify(error.response.data)}`);
+      Alert.alert('Erreur', ` ${JSON.stringify(error.response.data.error)} `);
     } else if (error.request) {
       Alert.alert('Erreur', 'Aucune réponse reçue du serveur. Vérifiez votre connexion Internet.');
     } else {
@@ -142,16 +154,18 @@ useEffect(() => {
   fetchFormations();
 }, []);
 
-const validatePaidAmount = (value) => {
-  const numericValue = parseFloat(value); 
-  setPaidAmount(value);
 
-  if (numericValue < 1000 || numericValue > 12500) {
-    setErrorMessage('Le montant doit être entre 1000 et 12500 FCFA.');
+const validatePhoneNumber = (value) => {
+  const phoneNumber = value.replace(/\D/g, ''); 
+  setPhone(phoneNumber); 
+
+  if (phoneNumber.length !== 9) {
+    setErrorMessage('Le numéro de téléphone doit contenir exactement 9 chiffres.');
   } else {
     setErrorMessage(''); 
+  }
 };
-}
+
   return (
     <SafeAreaView style={styles.containerTT}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -164,7 +178,7 @@ const validatePaidAmount = (value) => {
 
       <ScrollView style={{ backgroundColor: COLORS.white }}>
         <View style={styles.imageContainer}>
-          <Ionicons name="receipt-outline" size={100} color={COLORS.primary} />
+          <Ionicons name="receipt-outline" size={80} color={COLORS.primary} />
         </View>
 
         <View style={styles.inputContainer}>
@@ -195,9 +209,10 @@ const validatePaidAmount = (value) => {
             style={styles.input}
             placeholder="Numero telephone"
             value={phone}
-            onChangeText={setPhone}
+            onChangeText={validatePhoneNumber}
             keyboardType='numeric'
           />
+           {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
           </View>
 
           <View style={styles.dropdownContainer}>
@@ -270,7 +285,7 @@ const validatePaidAmount = (value) => {
             style={styles.input}
             placeholder="Montant payé"
             value={paid_amount}
-            onChangeText={validatePaidAmount} 
+            onChangeText={setPaidAmount} 
             keyboardType="numeric"
           />
         </View>
@@ -381,6 +396,10 @@ const styles = StyleSheet.create({
   selectedTextStyle: {
     color: 'black',
   },
+  errorText: {
+    fontSize: 12,
+    color: "red"
+  }
 });
 
 export default AddUser;
