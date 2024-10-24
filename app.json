@@ -2,10 +2,9 @@
   "expo": {
     "name": "aicAcademy",
     "slug": "aicAcademy",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
@@ -16,21 +15,23 @@
       "supportsTablet": true
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
+    "adaptiveIcon": {
+      "foregroundImage": "./assets/images/icon1.png",
+      "backgroundColor": "#ffffff"
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+    "package": "com.aic.aicacademy",
+    "versionCode": 1,
+    "permissions": ["INTERNET"],
+    "buildType": "apk"
+  },
+    "extra": {
+      "eas": {
+        "projectId": "0ce59428-6a4e-4e43-b1b9-11d48d5ea539"
+      }
     },
     "plugins": [
       "expo-router"
     ],
-    "experiments": {
-      "typedRoutes": true
-    }
+    "owner": "novic"
   }
 }
