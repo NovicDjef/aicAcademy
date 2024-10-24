@@ -1,4 +1,4 @@
-import { View, StyleSheet, TouchableOpacity, Text, FlatList, Alert, ActivityIndicator, TextInput } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, FlatList, Modal, Alert, ActivityIndicator, TextInput, RefreshControl } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/theme';
@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { router, Stack } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import { Dropdown } from 'react-native-element-dropdown';
 import { BottomSheet } from '@rneui/themed';
 import FloatingAddButton from './components/FloatingAddButton';
 
@@ -17,17 +18,24 @@ const dataCategories = [
 ];
 
 export default function Index() {
-  const [selectedCategory, setSelectedCategory] = useState(0); // Default to 'Tous'
+  const [selectedCategory, setSelectedCategory] = useState(0); 
   const [filteredItems, setFilteredItems] = useState([]);
-  const [students, setStudents] = useState([]);  // Pour stocker les étudiants récupérés
-  const [loading, setLoading] = useState(false); // Pour gérer l'indicateur de chargement
+  const [students, setStudents] = useState([]);  
+  const [loading, setLoading] = useState(false); 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState(null); // Étudiant sélectionné
+  const [selectedStudent, setSelectedStudent] = useState(null); 
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
-  const [isEditing, setIsEditing] = useState(false); // Pour le mode modification
+  const [isEditing, setIsEditing] = useState(false);
+  const [formationId, setFormationId] = useState(''); 
+  const [paidAmount, setPaidAmount] = useState(''); 
+  const [payments, setPayments] = useState([]); 
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [formations, setFormations] = useState([]); 
+  const [selectedFormation, setSelectedFormation] = useState(null); 
+  const [refreshing, setRefreshing] = useState(false); // Pour le refresh
 
 
-    // Champs de modification
+
     const [lastname, setLastname] = useState('');
     const [firstname, setFirstname] = useState('');
     const [gender, setGender] = useState('');
@@ -35,7 +43,112 @@ export default function Index() {
     const [grade, setGrade] = useState('');
     const [phone, setPhone] = useState('');
   
- 
+    const onRefresh = async () => {
+      setRefreshing(true); // Activer l'animation de rafraîchissement
+      try {
+        // Récupérer à nouveau les étudiants et les formations
+        await fetchFormations();
+        await fetchStudents();
+      } catch (error) {
+        console.error('Erreur lors du rafraîchissement:', error);
+      } finally {
+        setRefreshing(false); // Désactiver l'animation de rafraîchissement
+      }
+    };
+
+    const fetchFormations = async () => {
+      try {
+        const token = await AsyncStorage.getItem('access_token');
+        if (!token) {
+          Alert.alert('Erreur', 'Vous devez être connecté pour récupérer les formations.');
+          return;
+        }
+    
+        const config = {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        };
+    
+        const response = await axios.get('https://students.aic.cm/api/v1/formations', config);
+    
+        if (response.status === 200 && response.data && response.data.data) {
+          const formationsData = response.data.data;
+    
+          if (Array.isArray(formationsData)) {
+            const formattedFormations = formationsData.map(formation => ({
+              label: formation.name + "   " + "  " + formation.price + " Frs"  || 'Nom inconnu',
+              value: (formation.id || '').toString()
+            }));
+            setFormations(formattedFormations);
+          } else {
+            Alert.alert('Erreur', 'Le format des données de formations est invalide.');
+          }
+        } else {
+          Alert.alert('Erreur', 'Impossible de récupérer les formations. Format de réponse inattendu.');
+        }
+      } catch (error) {
+        Alert.alert('Erreur', `Une erreur est survenue lors de la récupération des formations: ${error.message}`);
+      }
+    };
+
+  const handleAddPayment = async () => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const config = {
+        headers: { Authorization: `Bearer ${token}` },
+      };
+  
+      const response = await axios.post(
+        `https://students.aic.cm/api/v1/students/${selectedStudent.id}/payments`,
+        {
+          formation_id: selectedFormation.value,
+          paid_amount: parseFloat(paidAmount),
+        },
+        config
+      );
+  
+      console.log('Paiement ajouté:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout du paiement:', error);
+      throw error;
+    }
+  };
+
+  const handleValidatePayment = async () => {
+    if (!selectedFormation) {
+      Alert.alert('Erreur', 'Veuillez sélectionner une formation.');
+      return;
+    }
+  
+    if (!paidAmount || isNaN(parseFloat(paidAmount))) {
+      Alert.alert('Erreur', 'Veuillez entrer un montant valide.');
+      return;
+    }
+  
+    try {
+      await handleAddPayment();
+      Alert.alert('Succès', 'Paiement ajouté avec succès.');
+      closeModal();
+    } catch (error) {
+      Alert.alert('Erreur', 'Une erreur est survenue lors de l\'ajout du paiement.');
+    }
+  };
+
+  useEffect(() => {
+    fetchFormations();
+  }, []);
+
+  const openModal = () => {
+    setIsModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setIsModalVisible(false);
+    setPaidAmount('');
+  };
+
 
   useEffect(() => {
     filterItems();
@@ -58,7 +171,7 @@ export default function Index() {
   
       const response = await axios.get('https://students.aic.cm/api/v1/students', config);
       if (response.status === 200 && response.data && response.data.data && response.data.data.data) {
-        setStudents(response.data.data.data);  // Correction ici
+        setStudents(response.data.data.data); 
         console.log("Étudiants récupérés:", response.data.data.data);
       } else {
         console.log("Réponse inattendue:", response.data);
@@ -72,7 +185,6 @@ export default function Index() {
     }
   };
   
-  // Assurez-vous que cette fonction est appelée dans un useEffect
   useEffect(() => {
     fetchStudents();
   }, []);
@@ -86,6 +198,7 @@ export default function Index() {
     setGrade(student.grade);
     setPhone(student.phone);
     setIsBottomSheetVisible(true);
+    fetchPayments(student.id); 
   };
 
   const closeBottomSheet = () => {
@@ -120,10 +233,9 @@ export default function Index() {
         gender,
         address,
         grade,
-        phone,
       };
       await axios.put(`https://students.aic.cm/api/v1/students/${selectedStudent.id}`, updatedStudent, config);
-      Alert.alert('Succès', 'Étudiant modifié avec succès.');
+      Alert.alert('Succès', `Étudiant modifié avec succès.`);
       setStudents(students.map(student => student.id === selectedStudent.id ? { ...student, ...updatedStudent } : student));
       closeBottomSheet();
     } catch (error) {
@@ -131,7 +243,6 @@ export default function Index() {
     }
   };
 
-  // Ajoutez ceci pour déboguer
   useEffect(() => {
     console.log("État actuel des étudiants:", students);
   }, [students]);
@@ -167,7 +278,29 @@ export default function Index() {
     Alert.alert('Déconnexion réussie', 'Vous êtes maintenant déconnecté.');
     router.push('/'); 
   };
-
+  const fetchPayments = async (studentId) => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const config = {
+        headers: { Authorization: `Bearer ${token}` }
+      };
+      const response = await axios.get(`https://students.aic.cm/api/v1/students/${studentId}/payments`, config);
+      setPayments(response.data); // Mettre à jour la liste des paiements
+    } catch (error) {
+      console.error('Erreur lors de la récupération des paiements:', error);
+    }
+  };
+  
+    const handleDeletePayment = async (paymentId) => {
+      try {
+        await axios.delete(`https://students.aic.cm/api/v1/students/${selectedStudent.id}/payments/${paymentId}`);
+        Alert.alert('Succès', 'Paiement supprimé avec succès.');
+        fetchPayments(selectedStudent.id); // Rafraîchir les paiements après la suppression
+      } catch (error) {
+        console.error('Erreur lors de la suppression du paiement:', error);
+        Alert.alert('Erreur', 'Une erreur est survenue lors de la suppression du paiement.');
+      }
+    };
   function renderMenu() {
     return (
       <>
@@ -210,7 +343,14 @@ export default function Index() {
     }
   
     return (
+      <>
       <FlatList
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh} // Fonction de rafraîchissement
+        />
+      }
         data={filteredItems}
         keyExtractor={item => item.id.toString()}
         renderItem={({ item }) => (
@@ -229,7 +369,7 @@ export default function Index() {
                 ]}
               >
                 <Text style={[
-                  styles.statusText, 
+                  styles.statusText,
                   { color: getStatusTextColor(item.payment_status) }
                 ]}>
                   {item.payment_status_tr || 'Non payé'}
@@ -237,8 +377,10 @@ export default function Index() {
               </View>
             </View>
           </TouchableOpacity>
-        )}
-      />
+        )} />
+        
+       
+        </>
     );
   }
 const getStatusColor = (status) => {
@@ -277,88 +419,143 @@ const getStatusTextColor = (status) => {
       <FloatingAddButton />
 
         <BottomSheet isVisible={isBottomSheetVisible} onBackdropPress={closeBottomSheet}>
-          <View style={styles.bottomSheetContainer}>
-            <Text style={styles.sheetTitle}>Détails de l'étudiant</Text>
-            {/* <View
-              style={[
-                styles.statusContainer,
-               { backgroundColor: getStatusColor(selectedStudent.payment_status) || null }, 
-              ]}
-            >
-              <Text
-                style={[
-                  styles.statusText,
-                 { color: getStatusTextColor(selectedStudent.payment_status) || null }, // Utiliser la couleur appropriée
-                ]}  
-              >
-                {selectedStudent.payment_status_tr || 'Non payé'}
-              </Text>
-            </View> */}
+  <View style={styles.bottomSheetContainer}>
+    <Text style={styles.sheetTitle}>Détails de l'étudiant</Text>
 
-            {isEditing ? (
-               <>
-               <EditableInfoItem
-                 icon="person-outline"
-                 label="Nom Etudiant"
-                 value={lastname}
-                 onChangeText={setLastname}
-                 placeholder="Nom"
-               />
-               <EditableInfoItem
-                 icon="person-outline"
-                 label="Prénom Etudiant"
-                 value={firstname}
-                 onChangeText={setFirstname}
-                 placeholder="Prénom"
-               />
-               <EditableInfoItem
-                 icon="male-female-outline"
-                 label="Sexe Etudiant"
-                 value={gender}
-                 onChangeText={setGender}
-                 placeholder="Genre"
-               />
-               <EditableInfoItem
-                 icon="location-outline"
-                 label="Adresse Etudiant"
-                 value={address}
-                 onChangeText={setAddress}
-                 placeholder="Adresse"
-               />
-               <EditableInfoItem
-                 icon="school-outline"
-                 label="Niveau d'etude"
-                 value={grade}
-                 onChangeText={setGrade}
-                 placeholder="Classe"
-               />
-             </>
-            ) : (
-              <>
-                <InfoItem icon="accessibility-outline" label="Nom Etudiant" value={lastname} />
-                <InfoItem icon="person-outline" label="Prenom Etudiant" value={firstname} />
-                <InfoItem icon="male-female-outline" label="Sexe Etudiant" value={gender} />
-                <InfoItem icon="location-outline" label="Adresse Etudiant" value={address} />
-                <InfoItem icon="school-outline" label="Niveau d'etude" value={grade} />
-              </>
-            )}
+    {/* Si l'utilisateur est en mode édition, afficher les champs de modification */}
+    {isEditing ? (
+      <>
+        <EditableInfoItem
+          icon="accessibility-outline"
+          label="Nom Etudiant"
+          value={lastname}
+          onChangeText={setLastname}
+          placeholder="Nom"
+        />
+        <EditableInfoItem
+          icon="person-outline"
+          label="Prénom Etudiant"
+          value={firstname}
+          onChangeText={setFirstname}
+          placeholder="Prénom"
+        />
+        <EditableInfoItem
+          icon="male-female-outline"
+          label="Sexe Etudiant"
+          value={gender}
+          onChangeText={setGender}
+          placeholder="Genre"
+        />
+        <EditableInfoItem
+          icon="location-outline"
+          label="Adresse Etudiant"
+          value={address}
+          onChangeText={setAddress}
+          placeholder="Adresse"
+        />
+        <EditableInfoItem
+          icon="school-outline"
+          label="Niveau d'etude"
+          value={grade}
+          onChangeText={setGrade}
+          placeholder="Classe"
+        />
+      </>
+    ) : (
+      <>
+        {/* Si non en édition, afficher les détails */}
+        <InfoItem icon="accessibility-outline" label="Nom Etudiant" value={lastname} />
+        <InfoItem icon="person-outline" label="Prenom Etudiant" value={firstname} />
+        <InfoItem icon="male-female-outline" label="Sexe Etudiant" value={gender} />
+        <InfoItem icon="location-outline" label="Adresse Etudiant" value={address} />
+        <InfoItem icon="school-outline" label="Niveau d'etude" value={grade} />
 
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.buttonDelete} onPress={handleDeleteStudent}>
-                <Text style={styles.buttonText}>Supprimer</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.button} onPress={() => setIsEditing(!isEditing)}>
-                <Text style={styles.buttonText}>{isEditing ? 'Annuler' : 'Modifier'}</Text>
-              </TouchableOpacity>
-              {isEditing && (
-                <TouchableOpacity style={styles.button} onPress={handleUpdateStudent}>
-                  <Text style={styles.buttonText}>Enregistrer</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        </BottomSheet>
+      </>
+    )}
+
+    <View style={styles.buttonContainer}>
+      {/* Bouton pour supprimer l'étudiant */}
+      <TouchableOpacity style={styles.buttonDelete} onPress={handleDeleteStudent}>
+        <Text style={styles.buttonText}>Supprimer</Text>
+      </TouchableOpacity>
+
+      {/* Afficher le bouton "Ajouter un paiement" uniquement si on n'est pas en mode édition */}
+      {!isEditing && (
+        <TouchableOpacity style={styles.button} onPress={openModal}>
+          <Text style={styles.buttonText}>Ajouter un paiement</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Bouton pour activer le mode édition ou annuler l'édition */}
+      <TouchableOpacity style={styles.button} onPress={() => setIsEditing(!isEditing)}>
+        <Text style={styles.buttonText}>{isEditing ? 'Annuler' : 'Modifier'}</Text>
+      </TouchableOpacity>
+
+      {/* Bouton pour enregistrer les modifications */}
+      {isEditing && (
+        <TouchableOpacity style={styles.button} onPress={handleUpdateStudent}>
+          <Text style={styles.buttonText}>Enregistrer</Text>
+        </TouchableOpacity>
+      )}
     </View>
+  </View>
+</BottomSheet>
+
+
+
+    </View>
+    <Modal
+  animationType="slide"
+  transparent={true}
+  visible={isModalVisible}
+  onRequestClose={closeModal}
+>
+  <View style={styles.modalContainer}>
+    <View style={styles.modalContent}>
+      <Text style={styles.modalTitle}>Ajouter un paiement</Text>
+
+      {/* Sélection de la formation */}
+      <Text style={styles.label}>Sélectionnez une formation :</Text>
+
+      <View style={styles.dropdownContainer}>
+        <Dropdown
+          style={styles.dropdown}
+          containerStyle={styles.dropdownMenuContainer}
+          placeholderStyle={styles.placeholderStyle}
+          data={formations}
+          maxHeight={300}
+          labelField="label"
+          valueField="value"
+          placeholder="Sélectionnez une formation"
+          value={selectedFormation} // Utiliser selectedFormation ici
+          onChange={(item) => {
+            setSelectedFormation(item); // Mettre à jour selectedFormation avec l'objet sélectionné
+          }}
+        />
+      </View>
+
+      {/* Entrée du montant payé */}
+      <Text style={styles.label}>Montant payé :</Text>
+      <TextInput
+        style={styles.input}
+        value={paidAmount}
+        onChangeText={setPaidAmount}
+        placeholder="Montant payé"
+        keyboardType="numeric"
+      />
+
+      <View style={styles.modalButtonsContainer}>
+        <TouchableOpacity style={styles.buttonCancel} onPress={closeModal}>
+          <Text style={styles.buttonText}>Annuler</Text>
+        </TouchableOpacity>
+         
+        <TouchableOpacity style={styles.button} onPress={handleValidatePayment}>
+          <Text style={styles.buttonText}>Valider</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
    </>
   );
 }
@@ -377,7 +574,7 @@ const EditableInfoItem = ({ icon, label, value, onChangeText, placeholder }) => 
   <View style={styles.editableInfoItem}>
     <Ionicons name={icon} size={24} color={COLORS.primary} style={styles.infoIcon} />
     <View style={styles.infoTextContainer}>
-      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoLabele}>{label}</Text>
       <TextInput
         style={styles.input}
         value={value}
@@ -389,6 +586,36 @@ const EditableInfoItem = ({ icon, label, value, onChangeText, placeholder }) => 
 );
 
 const styles = StyleSheet.create({
+
+  dropdownContainer: {
+    width: '100%', // Le Dropdown occupe 100% de la largeur du modal
+    marginBottom: 16,
+  },
+  dropdown: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 10,
+    width: '100%', // Prendre toute la largeur disponible
+    backgroundColor: '#f9f9f9',
+  },
+  dropdownMenuContainer: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    marginTop: 4,
+    width: '80%', // Prendre toute la largeur disponible
+  },
+  placeholderStyle: {
+    color: 'gray',
+  },
+
+  errorText: {
+    fontSize: 12,
+    color: "red"
+  },
+
+
   container: {
     flex: 1,
     backgroundColor: '#fff',
@@ -408,7 +635,9 @@ const styles = StyleSheet.create({
   editableInfoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: -14,
+
+    paddingBottom: 8,
   },
   itemContainer: {
     flexDirection: 'row',
@@ -478,7 +707,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, 
     borderColor: '#ccc', 
     marginBottom: 12, 
-    padding: 8 
+    padding: 6 
   },
   buttonContainer: {
     flexDirection: 'row', 
@@ -496,6 +725,7 @@ const styles = StyleSheet.create({
     borderRadius: 8 
   },
   buttonText: {
+    textAlign: 'center',
      color: 'white', 
      fontWeight: 'bold' 
     },
@@ -509,7 +739,7 @@ const styles = StyleSheet.create({
     infoItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 12,
+      marginBottom: 4,
       borderBottomWidth: 1,
       borderBottomColor: '#f0f0f0',
       paddingBottom: 8,
@@ -523,6 +753,11 @@ const styles = StyleSheet.create({
     infoLabel: {
       fontSize: 14,
       color: '#666',
+    },
+    infoLabele: {
+      fontSize: 14,
+      color: COLORS.gray60,
+      marginBottom: -8,
     },
     infoValue: {
       fontSize: 16,
@@ -567,5 +802,64 @@ const styles = StyleSheet.create({
       flexDirection: 'row', 
       alignItems: 'center', 
     }, 
+
+    addPaymentContainer: {
+      marginBottom: 16,
+    },
+    paymentTitle: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginBottom: 8,
+    },
+    paymentListContainer: {
+      marginTop: 16,
+    },
+    paymentItem: {
+      padding: 12,
+      backgroundColor: '#f0f0f0',
+      borderRadius: 8,
+      marginBottom: 8,
+    },
+
+
+    containerrr: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+   
+   
+    modalContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      width: '100%',
+    },
+    modalContent: {
+      width: '90%',
+      backgroundColor: '#fff',
+      padding: 20,
+      borderRadius: 10,
+      alignItems: 'center',
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 16,
+    },
+    
+    modalButtonsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      width: '100%',
+    },
+    buttonCancel: {
+      backgroundColor: 'red',
+      padding: 10,
+      borderRadius: 8,
+      marginLeft: 10,
+      alignItems: 'center',
+    },
 });
 
