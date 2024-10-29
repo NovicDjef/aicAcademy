@@ -23,7 +23,7 @@ export default function LoginScreen() {
         const token = await AsyncStorage.getItem('access_token');
         if (token) {
           setIsAuthenticated(true); // The user is authenticated
-          router.push('/Enregistrement'); // Redirect to another page
+          router.push('/Home'); // Redirect to another page
         }
       } catch (error) {
         console.error('Error fetching token from storage', error);
@@ -82,7 +82,7 @@ export default function LoginScreen() {
 
         setIsAuthenticated(true); // Mark user as authenticated
         Alert.alert('Succès', 'Connexion réussie !');
-        router.push('/Enregistrement'); // Redirect
+        router.push('/Home'); // Redirect
       } else {
         Alert.alert('Erreur', response.data.message || 'Erreur lors de la connexion.');
       }
@@ -215,6 +215,10 @@ export default function LoginScreen() {
             </View>
           )}
         </ScrollView>
+        <View>
+          <Text style={{textAlign: 'center', color: COLORS.gray30}}>@aic Sarl</Text>
+          <Text style={{textAlign: 'center', color: COLORS.gray30}}>RCCM :CM-DLA-01-2024-B12-00217</Text>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

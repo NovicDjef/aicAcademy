@@ -18,6 +18,7 @@ const dataCategories = [
 ];
 
 export default function Index() {
+
   const [selectedCategory, setSelectedCategory] = useState(0); 
   const [filteredItems, setFilteredItems] = useState([]);
   const [students, setStudents] = useState([]);  
@@ -70,7 +71,7 @@ export default function Index() {
           },
         };
     
-        const response = await axios.get('https://students.aic.cm/api/v1/formations', config);
+        const response = await axios.get(`https://students.aic.cm/api/v1/formations/`, config);
     
         if (response.status === 200 && response.data && response.data.data) {
           const formationsData = response.data.data;
@@ -360,7 +361,7 @@ export default function Index() {
                 <Text style={styles.itemName}>{`${item.lastname} ${item.firstname}`}</Text>
                 <Text style={styles.itemSubText}>{item.grade}</Text>
                 <Text style={styles.itemSubTextSemiBold}>{`${item.gender_tr} | ${item.address}`}</Text>
-                {item.paid_amount && <Text style={styles.itemAmount}>{`${item.paid_amount} FCFA`}</Text>}
+                {item.paid_amount && <Text style={styles.itemAmount}>{`${item.paid_amount}`}</Text>}
               </View>
               <View
                 style={[
@@ -404,7 +405,10 @@ const getStatusTextColor = (status) => {
    <>
      <Stack.Screen options={{ headerShown: false }} />
     <View style={styles.container}>
-      <View style={{ flexDirection: 'row', marginTop: 64, backgroundColor: COLORS.white }}>
+      <View style={{ flexDirection: 'row', marginTop: 64, marginBottom: 10, backgroundColor: COLORS.white }}>
+        <View style={styles.backButton}>
+          <Ionicons name='arrow-back-outline' size={24} color={COLORS.primary} onPress={() => router.back()} />
+        </View>
         <Text style={[styles.header, { top: -8 }]}>Enregistrement</Text>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={22} color={COLORS.white} style={{ left: 2 }} />
@@ -622,10 +626,20 @@ const styles = StyleSheet.create({
   },
   header: {
     flex: 1,
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 16,
     left: 10,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary + 80,
+    borderRadius: 25,
+    top: -16,
+    marginHorizontal: 10,
   },
   listContainer: {
     flex: 1,
