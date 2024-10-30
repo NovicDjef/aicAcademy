@@ -216,7 +216,7 @@ export default function LoginScreen() {
           )}
         </ScrollView>
         <View>
-          <Text style={{textAlign: 'center', color: COLORS.gray30}}>@aic Sarl</Text>
+          <Text style={{textAlign: 'center', color: COLORS.gray30}}>version 1.0.0,  @aic Sarl</Text>
           <Text style={{textAlign: 'center', color: COLORS.gray30}}>RCCM :CM-DLA-01-2024-B12-00217</Text>
         </View>
       </KeyboardAvoidingView>

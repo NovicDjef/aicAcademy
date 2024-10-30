@@ -11,10 +11,9 @@ import { BottomSheet } from '@rneui/themed';
 import FloatingAddButton from './components/FloatingAddButton';
 
 const dataCategories = [
-  { id: 0, name: 'Tous' },
-  { id: 1, name: 'Non payé' },
-  { id: 2, name: 'Partiellement payé' },
-  { id: 3, name: 'Payé' },
+  { id: 0, name: 'Informations' },
+  { id: 1, name: 'Paiement' },
+
 ];
 
 export default function Index() {
@@ -26,7 +25,6 @@ export default function Index() {
   const [loading, setLoading] = useState(false); 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null); 
-  const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   // const [formationId, setFormationId] = useState(''); 
   const [paidAmount, setPaidAmount] = useState(''); 
@@ -196,13 +194,11 @@ export default function Index() {
     setAddress(student.address);
     setGrade(student.grade);
     setPhone(student.phone);
-    setIsBottomSheetVisible(true);
     fetchPayments(student.id); 
   };
 
   const closeBottomSheet = () => {
     setSelectedStudent(null);
-    setIsBottomSheetVisible(false);
   };
 
   const handleDeleteStudent = async () => {
@@ -345,144 +341,9 @@ console.debug("students :", students.data)
       return <Text style={{ textAlign: 'center', marginTop: 50 }}>Aucun étudiant trouvé</Text>;
     }
   
-    const formatDateTime = (dateString) => {
-      const date = new Date(dateString); // Crée un objet Date à partir de la chaîne
-    
-      // Formate les valeurs jour, mois, année, heure et minute
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0'); // Les mois commencent à 0, donc +1
-      const year = date.getFullYear();
-    
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-    
-      // Retourne la date et l'heure formatées sous la forme jour-mois-année heure:minute
-      return `${day}-${month}-${year} à ${hours}:${minutes}`;
-    };
-    
-    // Exemple d'utilisation
-    const formattedDateTime = formatDateTime("2024-10-24T22:11:34.000000Z");
-    
     return (
-      <>
-      {/* <FlatList
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh} // Fonction de rafraîchissement
-        />
-      }
-        data={filteredItems}
-        keyExtractor={item => item.id.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => openBottomSheet(item)}>
-            <View style={styles.itemContainer}>
-              <View style={styles.itemTextContainer}>
-                <Text style={styles.itemName}>{`${item.lastname} ${item.firstname}`}</Text>
-                <Text style={styles.itemSubText}>{item.grade}</Text>
-                <Text style={styles.itemSubTextSemiBold}>{`${item.gender_tr} | ${item.address}`}</Text>
-                {item.paid_amount && <Text style={styles.itemAmount}>{`${item.paid_amount}`}</Text>}
-              </View>
-              <View
-                style={[
-                  styles.statusContainer,
-                  { backgroundColor: getStatusColor(item.payment_status) },
-                ]}
-              >
-                <Text style={[
-                  styles.statusText,
-                  { color: getStatusTextColor(item.payment_status) }
-                ]}>
-                  {item.payment_status_tr || 'Non payé'}
-                </Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        )} /> */}
-        <FlatList
-  refreshControl={
-    <RefreshControl
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-    />
-  }
-  data={students.data}
-  keyExtractor={item => item.id.toString()}
-  renderItem={({ item }) => (
-    <TouchableOpacity onPress={() => router.push("/InfoUser")}>
-      <View style={styles.itemContainer}>
-        <View style={styles.itemTextContainer}>
-          <Text style={styles.itemName}>{`${item.student.lastname} ${item.student.firstname}`}</Text>
-          <Text style={styles.itemSubText}>{item.student.grade}</Text>
-          <Text style={styles.itemSubTextSemiBold}>{`${item.student.gender_tr} | ${item.student.address}`}</Text>
-          {item.paid_amount && <Text style={styles.itemAmount}>{`${item.paid_amount} FCFA`}</Text>}
-          <Text>{formattedDateTime}</Text>
-        </View>
-        <View
-          style={[
-            styles.statusContainer,
-            { backgroundColor: getStatusColor(item.payment_status) },
-          ]}
-        >
-          <Text style={[
-            styles.statusText,
-            { color: getStatusTextColor(item.payment_status) }
-          ]}>
-            {item.payment_status_tr || 'Non payé'}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  )}
-/>
-
-        
-       
-        </>
-    );
-  }
-const getStatusColor = (status) => {
-  switch(status) {
-    case 'PAID': return '#BCF5CB';
-    case 'PARTIALLY_PAID': return '#FDD7AA';
-    default: return '#D0E8FF';
-  }
-};
-
-const getStatusTextColor = (status) => {
-  switch(status) {
-    case 'PAID': return '#18632e';
-    case 'PARTIALLY_PAID': return '#f67419';
-    default: return '#1a4bb3';
-  }
-};
-
-
-  return (
-   <>
-     <Stack.Screen options={{ headerShown: false }} />
-    <View style={styles.container}>
-      <View style={{ flexDirection: 'row', marginTop: 64, marginBottom: 10, backgroundColor: COLORS.white }}>
-        <View style={styles.backButton}>
-          <Ionicons name='arrow-back-outline' size={24} color={COLORS.primary} onPress={() => router.back()} />
-        </View>
-          <Text style={[styles.header, { top: -8 }]}>
-            {formationName || "Nom non disponible"}
-          </Text>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={22} color={COLORS.white} style={{ left: 2 }} />
-        </TouchableOpacity>
-      </View>
-      <View style={{ marginTop: -10, backgroundColor: COLORS.white }}>
-        {renderMenu()}
-      </View>
-      <View style={styles.listContainer}>
-        {renderItems()}
-      </View>
-      <FloatingAddButton />
-
-        <BottomSheet isVisible={isBottomSheetVisible} onBackdropPress={closeBottomSheet}>
-  <View style={styles.bottomSheetContainer}>
+     <>
+         <View style={styles.bottomSheetContainer}>
     <Text style={styles.sheetTitle}>Détails de l'étudiant</Text>
 
     {/* Si l'utilisateur est en mode édition, afficher les champs de modification */}
@@ -563,9 +424,30 @@ const getStatusTextColor = (status) => {
       )}
     </View>
   </View>
-</BottomSheet>
+     </>
+    );
+  }
 
 
+  return (
+   <>
+     <Stack.Screen options={{ headerShown: false }} />
+    <View style={styles.container}>
+      <View style={{ flexDirection: 'row', marginTop: 64, marginBottom: 10, backgroundColor: COLORS.white }}>
+        <View style={styles.backButton}>
+          <Ionicons name='arrow-back-outline' size={24} color={COLORS.primary} onPress={() => router.back()} />
+        </View>
+          <Text style={[styles.header, { top: -8 }]}>
+            {formationName || "Detail de l'étudiant"}
+          </Text>
+    
+      </View>
+      <View style={{ marginTop: -10, backgroundColor: COLORS.white }}>
+        {renderMenu()}
+      </View>
+      <View style={styles.listContainer}>
+        {renderItems()}
+      </View>
 
     </View>
     <Modal
