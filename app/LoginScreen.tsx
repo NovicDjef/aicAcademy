@@ -3,9 +3,10 @@ import { View, Text, TextInput, Platform, SafeAreaView, KeyboardAvoidingView, Sc
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import for persistent storage
 import { COLORS } from '@/constants/theme'; 
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useButtonContext } from './ButtonContext';
 import { Ionicons } from '@expo/vector-icons';
+
 
 export default function LoginScreen() {
   const { setShowButton } = useButtonContext();
@@ -139,6 +140,7 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
+        <Stack.Screen options={{ headerShown: false }} />
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -147,7 +149,7 @@ export default function LoginScreen() {
             <>
               <View style={styles.logoContainer}>
                 <Image
-                  source={require('../assets/images/aic2.png')}
+                  source={require('../assets/images/logo1.png')}
                   style={styles.logo}
                   resizeMode="contain"
                 />

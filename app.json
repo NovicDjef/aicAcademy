@@ -4,7 +4,7 @@
     "slug": "aicAcademy",
     "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo.png",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
@@ -16,7 +16,7 @@
     },
     "android": {
     "adaptiveIcon": {
-      "foregroundImage": "./assets/images/icon1.png",
+      "foregroundImage": "./assets/images/logo.png",
       "backgroundColor": "#ffffff"
     },
     "package": "com.aic.aicacademy",

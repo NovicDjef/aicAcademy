@@ -24,11 +24,9 @@ export default function Index() {
   const [filteredItems, setFilteredItems] = useState([]);
   const [students, setStudents] = useState([]);  
   const [loading, setLoading] = useState(false); 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null); 
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  // const [formationId, setFormationId] = useState(''); 
   const [paidAmount, setPaidAmount] = useState(''); 
   const [payments, setPayments] = useState([]); 
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -45,7 +43,6 @@ export default function Index() {
     const [grade, setGrade] = useState('');
     const [phone, setPhone] = useState('');
   
-    console.debug('formationId:', formationName);
     const onRefresh = async () => {
       setRefreshing(true); // Activer l'animation de rafraîchissement
       try {
@@ -249,38 +246,36 @@ export default function Index() {
 
 // Filtrer les étudiants par formation
 // const filteredItems = students.data.filter(item => item.formation_id === formationId);
-console.debug("students :", students.data)
-  const filterItems = () => {
-    if (selectedCategory === 0) {
-      setFilteredItems(students);
-    } else {
-      const statusMap = {
-        1: null,
-        2: 'PARTIALLY_PAID',
-        3: 'PAID'
-      };
-      const selectedStatus = statusMap[selectedCategory];
-      const filteredData = students.data.filter(item => 
-        selectedStatus === null 
-          ? item.student.payment_status === null 
-          : item.student.payment_status === selectedStatus
-      );
-      setFilteredItems(filteredData);
-    }
-    console.log("Éléments filtrés:", filteredItems);
-  };
-  
-  useEffect(() => {
-    filterItems();
-  }, [selectedCategory, students]);
+const filterItems = () => {
+  if (selectedCategory === 0) {
+    // Tous les étudiants
+    setFilteredItems(students);
+  } else {
+    // Mapper les catégories avec les statuts
+    const statusMap = {
+      1: null,
+      2: 'PARTIALLY_PAID',
+      3: 'PAID',
+    };
+    const selectedStatus = statusMap[selectedCategory];
 
-  const handleLogout = async () => {
-    await AsyncStorage.removeItem('access_token');
-    await AsyncStorage.removeItem('refresh_token');
-    setIsAuthenticated(false);
-    Alert.alert('Déconnexion réussie', 'Vous êtes maintenant déconnecté.');
-    router.push('/'); 
-  };
+    // Filtrer les étudiants selon le statut
+    const filteredData = students.data?.filter(item =>
+      selectedStatus === null
+        ? item.student.payment_status === null
+        : item.student.payment_status === selectedStatus
+    );
+
+    setFilteredItems(filteredData);
+  }
+};
+
+// Appliquer le filtre à chaque changement de catégorie ou de liste d'étudiants
+useEffect(() => {
+  filterItems();
+}, [selectedCategory, students]);
+
+
   const fetchPayments = async (studentId) => {
     try {
       const token = await AsyncStorage.getItem('access_token');
@@ -304,38 +299,34 @@ console.debug("students :", students.data)
     //     Alert.alert('Erreur', 'Une erreur est survenue lors de la suppression du paiement.');
     //   }
     // };
-  function renderMenu() {
-    return (
-      <>
-        <StatusBar style="dark" />
-        <View style={{ alignItems: 'center' }}>
-          <FlatList
-            data={dataCategories}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={item => item.id.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={{
-                  padding: 8,
-                  paddingHorizontal: 14,
-                  backgroundColor: selectedCategory === item.id ? COLORS.primary : COLORS.gray10,
-                  borderRadius: 20,
-                  alignItems: 'center',
-                  marginHorizontal: 4,
-                }}
-                onPress={() => setSelectedCategory(item.id)}
-              >
-                <Text style={{ fontSize: 16, color: selectedCategory === item.id ? COLORS.white : COLORS.black }}>
-                  {item.name}
-                </Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      </>
+    const renderMenu = () => (
+      <View style={{ alignItems: 'center' }}>
+        <FlatList
+          data={dataCategories}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={item => item.id.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={{
+                padding: 8,
+                paddingHorizontal: 14,
+                backgroundColor: selectedCategory === item.id ? 'blue' : 'grey',
+                borderRadius: 20,
+                alignItems: 'center',
+                marginHorizontal: 4,
+              }}
+              onPress={() => setSelectedCategory(item.id)}
+            >
+              <Text style={{ fontSize: 16, color: selectedCategory === item.id ? 'white' : 'black' }}>
+                {item.name}
+              </Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
     );
-  }
+  
   function renderItems() {
     if (loading) {
       return <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 50 }} />;
@@ -365,40 +356,6 @@ console.debug("students :", students.data)
     
     return (
       <>
-      {/* <FlatList
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh} // Fonction de rafraîchissement
-        />
-      }
-        data={filteredItems}
-        keyExtractor={item => item.id.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => openBottomSheet(item)}>
-            <View style={styles.itemContainer}>
-              <View style={styles.itemTextContainer}>
-                <Text style={styles.itemName}>{`${item.lastname} ${item.firstname}`}</Text>
-                <Text style={styles.itemSubText}>{item.grade}</Text>
-                <Text style={styles.itemSubTextSemiBold}>{`${item.gender_tr} | ${item.address}`}</Text>
-                {item.paid_amount && <Text style={styles.itemAmount}>{`${item.paid_amount}`}</Text>}
-              </View>
-              <View
-                style={[
-                  styles.statusContainer,
-                  { backgroundColor: getStatusColor(item.payment_status) },
-                ]}
-              >
-                <Text style={[
-                  styles.statusText,
-                  { color: getStatusTextColor(item.payment_status) }
-                ]}>
-                  {item.payment_status_tr || 'Non payé'}
-                </Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        )} /> */}
         <FlatList
   refreshControl={
     <RefreshControl
@@ -409,7 +366,12 @@ console.debug("students :", students.data)
   data={students.data}
   keyExtractor={item => item.id.toString()}
   renderItem={({ item }) => (
-    <TouchableOpacity onPress={() => router.push("/InfoUser")}>
+    <TouchableOpacity 
+    onPress={() => router.push({
+      pathname: "/InfoUser",
+      params: { studentData: JSON.stringify(item) }
+    })}
+    >
       <View style={styles.itemContainer}>
         <View style={styles.itemTextContainer}>
           <Text style={styles.itemName}>{`${item.student.lastname} ${item.student.firstname}`}</Text>
@@ -469,9 +431,7 @@ const getStatusTextColor = (status) => {
           <Text style={[styles.header, { top: -8 }]}>
             {formationName || "Nom non disponible"}
           </Text>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={22} color={COLORS.white} style={{ left: 2 }} />
-        </TouchableOpacity>
+        
       </View>
       <View style={{ marginTop: -10, backgroundColor: COLORS.white }}>
         {renderMenu()}
@@ -753,17 +713,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
-  logoutButton: {
-    top: -10,
-    right: 10,
-    backgroundColor: COLORS.secondary,
-    width: 30,
-    height: 30,
-    borderRadius: 25,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  
 
   bottomSheetContainer: { 
     padding: 16, 

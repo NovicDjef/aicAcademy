@@ -35,7 +35,7 @@ export default function Page() {
     prepareResources();
   }, []);
 
-  // Gérer la fin de l'animation
+  // Gérer la fin de l'animations
   const handleAnimationComplete = useCallback(() => {
     setIsSplashComplete(true);
   }, []);
@@ -45,7 +45,6 @@ export default function Page() {
     return null;
   }
 
-  // Afficher l'animation ou l'écran de connexion
   return (
     <>
       {!isSplashComplete ? (

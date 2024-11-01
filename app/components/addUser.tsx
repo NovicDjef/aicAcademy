@@ -32,7 +32,13 @@ const [loading, setLoading] = useState(false);
 const [showPaymentForm, setShowPaymentForm] = useState(false);  // État pour afficher les champs de paiement
 const [formations, setFormations] = useState([]);  // Stocke les formations récupérées
 const [errorMessage, setErrorMessage] = useState(''); // Pour gérer les erreurs de validation
-
+const [type, setType] = useState('')
+const [school_name, setSchool_name] = useState('')
+const [activity_branch, setActivity_branch] = useState('');
+const [school_speciality, setSchool_speciality] = useState('');
+const [company, setCompany] = useState('')
+const [company_role, setCompany_role] = useState('');
+const [experience_years, setExperience_years] = useState('')
 
 const fetchFormations = async () => {
   try {
@@ -101,6 +107,13 @@ const handleSubmit = async () => {
     address,
     grade,
     phone,
+    school_name,
+    type,
+    activity_branch,
+    school_speciality,
+    company,
+    company_role,
+    experience_years,
     // Ajoutez formation_id et paid_amount seulement s'ils sont renseignés
     ...(formation_id && { formation_id: parseInt(formation_id) }),
     ...(paid_amount && { paid_amount: parseFloat(paid_amount) })
@@ -149,6 +162,11 @@ const genderOptions = [
   { label: 'Homme', value: 'MALE' },
   { label: 'Femme', value: 'FEMALE' },
 ];
+const typeOption = [
+  {label: 'STUDENT', value: 'STUDENT'},
+  {label: 'PROFESSIONAL', value: 'PROFESSIONAL'},
+  {label: 'SANS EMPLOIE', value: 'UNEMPLOYEE'}
+]
 
 useEffect(() => {
   fetchFormations();
@@ -232,7 +250,85 @@ const validatePhoneNumber = (value) => {
               }}
             />
           </View>
+          <View style={styles.dropdownContainer}>
+            {/* <Text style={styles.label}>Sexe</Text> */}
+            <Dropdown
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              data={typeOption}
+              maxHeight={300}
+              labelField="label"
+              valueField="value"
+              placeholder="Sélectionner le type"
+              value={type}
+              onChange={(item) => {
+                setType(item.value);
+              }}
+            />
+          </View>
+          {type === 'STUDENT' && (
+        <>
+          <View style={styles.textinputs}>
+            <TextInput
+              style={styles.input}
+              placeholder="Nom de votre école"
+              value={school_name}
+              onChangeText={setSchool_name}
+            />
+          </View>
+          <View style={styles.textinputs}>
+            <TextInput
+              style={styles.input}
+              placeholder="Votre spécialité"
+              value={school_speciality}
+              onChangeText={setSchool_speciality}
+            />
+          </View>
+        </>
+      )}
 
+      {/* Champs pour PROFESSIONAL */}
+      {type === 'PROFESSIONAL' && (
+        <>
+          <View style={styles.textinputs}>
+            <TextInput
+              style={styles.input}
+              placeholder="Nom de l'entreprise"
+              value={company}
+              onChangeText={setCompany}
+            />
+          </View>
+          <View style={styles.textinputs}>
+            <TextInput
+              style={styles.input}
+              placeholder="Nombre d'années d'expérience"
+              value={experience_years}
+              onChangeText={setExperience_years}
+            />
+          </View>
+          <View style={styles.textinputs}>
+            <TextInput
+              style={styles.input}
+              placeholder="Rôle dans l'entreprise"
+              value={company_role}
+              onChangeText={setCompany_role}
+            />
+          </View>
+        </>
+      )}
+
+      {/* Champs pour UNEMPLOYEE */}
+      {type === 'UNEMPLOYEE' && (
+        <View style={styles.textinputs}>
+          <TextInput
+            style={styles.input}
+            placeholder="Secteur d'activité"
+            value={activity_branch}
+            onChangeText={setActivity_branch}
+          />
+        </View>
+      )}
           <View style={styles.textinputs}>
           {/* <Text style={styles.label}>Adresse de residence</Text> */}
           <TextInput

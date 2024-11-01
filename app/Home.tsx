@@ -6,7 +6,7 @@ import { COLORS, FONTS, SIZES } from '@/constants/theme';
 import Header from './Header';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Link, useRouter } from 'expo-router';
+import { Link, Stack, useRouter } from 'expo-router';
 import FloatingAddButton from './components/FloatingAddButton';
 
 // URL de l'API
@@ -39,7 +39,7 @@ const Home = () => {
 
       if (response.status === 200 && response.data && response.data.data) {
         const formationsData = response.data.data;
-        console.debug('API_URL:', response.data.data);
+        console.debug('API_URL:', response.data);
         setFormations(formationsData);
       } else {
         Alert.alert('Erreur', 'Impossible de récupérer les formations. Format de réponse inattendu.');
@@ -54,6 +54,7 @@ const Home = () => {
 
   return (
     <SafeAreaView style={styles.areaStyle}>
+      <Stack.Screen options={{ headerShown: false }} />
       <Header />
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
         <View style={styles.center}>
@@ -142,54 +143,4 @@ const styles = StyleSheet.create({
 export default Home;
 
 
-// DEBUG API_URL: [
-  // {
-  //   "active": 1,
-  //   "address": "Amphi 1000",
-  //   "created_at": "2024-10-18T23:40:08.000000Z",
-  //   "deleted_at": null,
-  //   "description": "Les bases du Marketing Digital",
-  //   "end_at": "2024-10-19T05:39:54.000000Z",
-  //   "id": 1,
-  //   "name": "Base du Marketing Digital",
-  //   "price": "12500.00",
-  //   "price_tr": "12 500 FCFA",
-  //   "start_at": "2024-10-18T00:39:51.000000Z",
-  //   "total_collected": "125 000 FCFA",
-  //   "total_students": 10,
-  //   "updated_at": "2024-10-18T23:40:08.000000Z"
-  // },
-  // {
-  //   "active": 1,
-  //   "address": "Douala",
-  //   "created_at": "2024-10-27T13:10:28.000000Z",
-  //   "deleted_at": null,
-  //   "description": "Technique de recherche d'emploi",
-  //   "end_at": "2024-10-03T14:10:08.000000Z",
-  //   "id": 2,
-  //   "name": "Technique de recherche d'emploi",
-  //   "price": "28500.00",
-  //   "price_tr": "28 500 FCFA",
-  //   "start_at": "2024-10-25T14:10:02.000000Z",
-  //   "total_collected": "85 500 FCFA",
-  //   "total_students": 3,
-  //   "updated_at": "2024-10-27T13:10:28.000000Z"
-  // },
-  // {
-  //   "active": 1,
-  //   "address": "Yaounde",
-  //   "created_at": "2024-10-27T13:12:47.000000Z",
-  //   "deleted_at": null,
-  //   "description": "Management situationelle",
-  //   "end_at": null,
-  //   "id": 3,
-  //   "name": "Management situationelle",
-  //   "price": "52500.00",
-  //   "price_tr": "52 500 FCFA",
-  //   "start_at": "2024-11-07T14:12:33.000000Z",
-  //   "total_collected": "52 500 FCFA",
-  //   "total_students": 1,
-  //   "updated_at": "2024-10-27T13:12:47.000000Z"
-  // }
-// ]
 

@@ -1,4 +1,4 @@
-import { View, Image, StyleSheet, TouchableOpacity, Text, Platform } from 'react-native'
+import { View, Image, StyleSheet, TouchableOpacity, Text, Platform, Alert } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import {Colors} from '@/constants/Colors'
@@ -6,37 +6,70 @@ import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '@/constants/theme';
+import axios from 'axios';
 
 
 export default function Header() {
-  // const UserData = useSelector(state => state.Auth.user)
-  // const { UserData, token, isAuthenticated, isLoading, error } = useSelector(state => state.user.auth);
   const router = useRouter();
   const [user, setUser] = useState(null);
 
-  // useEffect(() => {
-  //   const fetchUserData = async () => {
-  //     try {
-  //       const userDataString = await AsyncStorage.getItem('userData'); // Récupère la chaîne JSON de `userData`
-        
-  //       if (userDataString) {
-  //         const userData = JSON.parse(userDataString); // Convertit la chaîne JSON en objet
-  //         setUser(userData); // Met à jour l'état `user` avec l'objet JSON
-  //       }
-  //     } catch (error) {
-  //       console.error('Error retrieving user data:', error);
-  //     }
-  //   };
-  //   console.log("User :", user)
-  //   fetchUserData();  
-  // }, []);
-  const navigateToFavorites = () => {
-    // Naviguer vers la page qui contient le composant Favorite
-    router.push('/components/Historique');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('access_token');
+    await AsyncStorage.removeItem('refresh_token');
+    setIsAuthenticated(false);
+    Alert.alert('Déconnexion réussie', 'Vous êtes maintenant déconnecté.');
+    router.push('/'); 
   };
-  const navigateToNotifications = () => {
-    router.push("/components/Notifications")
-  }
+  const fetchUserData = async () => {
+    try {
+      let token = await AsyncStorage.getItem('access_token');
+  
+      if (!token) {
+        Alert.alert('Erreur', 'Vous devez être connecté pour récupérer les étudiants.');
+        return;
+      }
+  
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+      };
+  
+      const response = await axios.post('https://students.aic.cm/api/v1/user', config);
+      console.log("Réponse de l'utilisateur :", response.data);
+  
+      if (response.status === 200 && response.data && response.data.data) {
+        const usersData = response.data.data;
+        setUser(usersData);
+      } else {
+        Alert.alert('Erreur', "Impossible de récupérer l'agent. Format de réponse inattendu.");
+      }
+    } catch (error) {
+      if (error.response && error.response.status === 401) {
+        // Token expiré, essayer de rafraîchir le token
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+          fetchUserData(); // Relancer la requête avec le nouveau token
+        } else {
+          Alert.alert('Erreur', 'Vous devez vous reconnecter.');
+        }
+      } else {
+        console.error("Erreur complète :", error);
+        Alert.alert('Erreur', `Une erreur est survenue lors de la récupération de l'agent: ${error.message}`);
+      }
+    }
+  };
+  
+
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+  console.log("user :", user)
   return (
     <><StatusBar style='dark' /><View style={styles.container}>
 
@@ -52,13 +85,13 @@ export default function Header() {
         )}
         <View style={{ gap: 3, left: 2 }}>
           <Text style={styles.welcomText}>Bienvenue sur Aic Academy</Text>
-          <Text style={styles.userName}>Salut, {user == undefined ? "Stephane": "Agent"  }
+          <Text style={styles.userName}> Salut, {user ? user.name : 'Agent' }
           </Text>
         </View>
       </View>
       <View style={[styles.icons]}>
-        <TouchableOpacity onPress={navigateToNotifications}>
-          <Ionicons name='notifications-outline' size={24} color={COLORS.black} />
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={24} color={COLORS.white} style={{ left: 2 }} />
         </TouchableOpacity>
         
       </View>
@@ -109,5 +142,17 @@ const styles = StyleSheet.create({
     top: Platform.OS === 'ios' ? -10 : -9, 
     right: -3,  
     alignItems: 'center',
-    justifyContent: 'center',}
+    justifyContent: 'center',
+  },
+    logoutButton: {
+      top: 0,
+      right: 0,
+      backgroundColor: COLORS.secondary,
+      width: 35,
+      height: 35,
+      borderRadius: 25,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
 })
