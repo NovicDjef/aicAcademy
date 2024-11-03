@@ -39,7 +39,7 @@ const [school_speciality, setSchool_speciality] = useState('');
 const [company, setCompany] = useState('')
 const [company_role, setCompany_role] = useState('');
 const [experience_years, setExperience_years] = useState('')
-
+const [selectedFormation, setSelectedFormation] = useState(null); 
 const fetchFormations = async () => {
   try {
     const token = await AsyncStorage.getItem('access_token');
@@ -81,6 +81,20 @@ const fetchFormations = async () => {
   setShowPaymentForm(true);
 }; 
 
+const prepareFormData = (data) => {
+  // Remplace les valeurs vides par null, et exclut les clés ayant null comme valeur
+  return Object.fromEntries(
+    Object.entries(data)
+      .map(([key, value]) => [key, value === "" ? null : value])
+      .filter(([_, value]) => value !== null) // Exclut les champs null
+  );
+}; 
+
+// const replaceEmptyWithNull = (data) => {
+//   return Object.fromEntries(
+//     Object.entries(data).map(([key, value]) => [key, value === "" ? null : value])
+//   );
+// };
 const handleSubmit = async () => {
   // Validation des champs obligatoires
   if (!lastname || !firstname || !gender || !address || !grade) {
@@ -95,12 +109,12 @@ const handleSubmit = async () => {
   }
 
   // Validation du montant payé : doit être entre 1000 et 12500 FCFA
-  if (paid_amount && (paid_amount < 1000 || paid_amount > 12500)) {
+  if (paid_amount && (paid_amount < 1000 || paid_amount > 125000)) {
     Alert.alert('Erreur', 'Le montant payé doit être compris entre 1000 FCFA et 12500 FCFA veyez saisir un montant correct SVP.');
     return;
   }
 
-  const userData = {
+  let userData = {
     lastname,
     firstname,
     gender,
@@ -118,6 +132,9 @@ const handleSubmit = async () => {
     ...(formation_id && { formation_id: parseInt(formation_id) }),
     ...(paid_amount && { paid_amount: parseFloat(paid_amount) })
   };
+
+  // userData = replaceEmptyWithNull(userData);
+  userData = prepareFormData(userData);
 
   console.log('Données à envoyer:', userData);
 
@@ -137,7 +154,7 @@ const handleSubmit = async () => {
     };
 
     const response = await axios.post('https://students.aic.cm/api/v1/students', userData, config);
-    
+    console.debug('Reponse:', response.data);
     if (response.status === 200) {
       Alert.alert('Succès', 'Étudiant enregistré avec succès.');
       router.push('/Enregistrement');
@@ -267,6 +284,7 @@ const validatePhoneNumber = (value) => {
               }}
             />
           </View>
+         
           {type === 'STUDENT' && (
         <>
           <View style={styles.textinputs}>

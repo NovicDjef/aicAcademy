@@ -22,53 +22,45 @@ export default function Header() {
     Alert.alert('Déconnexion réussie', 'Vous êtes maintenant déconnecté.');
     router.push('/'); 
   };
-  const fetchUserData = async () => {
-    try {
-      let token = await AsyncStorage.getItem('access_token');
-  
-      if (!token) {
-        Alert.alert('Erreur', 'Vous devez être connecté pour récupérer les étudiants.');
-        return;
-      }
-  
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-      };
-  
-      const response = await axios.post('https://students.aic.cm/api/v1/user', config);
-      console.log("Réponse de l'utilisateur :", response.data);
-  
-      if (response.status === 200 && response.data && response.data.data) {
-        const usersData = response.data.data;
-        setUser(usersData);
-      } else {
-        Alert.alert('Erreur', "Impossible de récupérer l'agent. Format de réponse inattendu.");
-      }
-    } catch (error) {
-      if (error.response && error.response.status === 401) {
-        // Token expiré, essayer de rafraîchir le token
-        const newToken = await refreshAccessToken();
-        if (newToken) {
-          fetchUserData(); // Relancer la requête avec le nouveau token
-        } else {
-          Alert.alert('Erreur', 'Vous devez vous reconnecter.');
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        let token = await AsyncStorage.getItem('access_token');
+    
+        if (!token) {
+          Alert.alert('Erreur', 'Vous devez être connecté pour récupérer les étudiants.');
+          return;
         }
-      } else {
+    
+        const config = {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+        };
+    
+        // Appel de la requête avec un corps vide `{}` pour éviter l'erreur
+        const response = await axios.post('https://students.aic.cm/api/v1/user', {}, config);
+        console.log("Réponse de l'utilisateur :", response.data);
+    
+        if (response.status === 200 && response.data && response.data.data) {
+          const usersData = response.data.data;
+          setUser(usersData);
+        } else {
+          Alert.alert('Erreur', "Impossible de récupérer l'agent. Format de réponse inattendu.");
+        }
+      } catch (error) {
         console.error("Erreur complète :", error);
         Alert.alert('Erreur', `Une erreur est survenue lors de la récupération de l'agent: ${error.message}`);
       }
-    }
-  };
-  
-
-
-  useEffect(() => {
+    };
+    
     fetchUserData();
   }, []);
+  
+  
+
   console.log("user :", user)
   return (
     <><StatusBar style='dark' /><View style={styles.container}>
@@ -77,11 +69,11 @@ export default function Header() {
         {user !== undefined ? (
           <Image
             style={styles.userImage}
-            source={require('../assets/images/icon.png')} />
+            source={require('../assets/images/logo1.png')} />
         ) : (
           <Image
             style={styles.userImage}
-            source={require('../assets/images/icon.png')} />
+            source={require('../assets/images/logo1.png')} />
         )}
         <View style={{ gap: 3, left: 2 }}>
           <Text style={styles.welcomText}>Bienvenue sur Aic Academy</Text>

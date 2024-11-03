@@ -18,7 +18,7 @@ export default function Page() {
       await Promise.all([
         Asset.loadAsync([
           require('../assets/images/splash.png'),
-          require('../assets/images/aic.png'),
+          require('../assets/images/logo1.png'),
         ]),
       ]);
     } catch (error) {

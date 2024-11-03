@@ -1,4 +1,4 @@
-import { View, StyleSheet, TouchableOpacity, Text, FlatList, Modal, Alert, ActivityIndicator, TextInput, RefreshControl } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, FlatList, Modal, Alert, ActivityIndicator, TextInput, RefreshControl, ScrollView } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/theme';
@@ -11,14 +11,14 @@ const dataCategories = [
   { id: 0, name: 'Informations' },
   { id: 1, name: 'Paiement' },
 ];
-const API_URL = 'https://students.aic.cm/api/v1/formations';
+// const API_URL = 'https://students.aic.cm/api/v1/formations';
 export default function Index() {
 
   const { studentData } = useLocalSearchParams(); 
   const studentDetails = typeof studentData === 'string' ? JSON.parse(studentData) : studentData;
   const formationId = studentDetails.formation_id;
   const studentId = studentDetails.student.id;
-
+//  console.debug("studentDetails :", formationId)
   const [selectedCategory, setSelectedCategory] = useState(0); 
   const [filteredItems, setFilteredItems] = useState([]);
   const [students, setStudents] = useState(null);  
@@ -28,7 +28,7 @@ export default function Index() {
   const [payments, setPayments] = useState([]); 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [formations, setFormations] = useState([]); 
-  const [selectedFormation, setSelectedFormation] = useState(""); 
+  const [selectedFormation, setSelectedFormation] = useState(null); 
   const [paymentStatus, setPaymentStatus] = useState('');
   const [paidAmount, setPaidAmount] = useState('');
   const [price, setPrice] = useState('');
@@ -37,20 +37,49 @@ export default function Index() {
   const [gender, setGender] = useState('');
   const [address, setAddress] = useState('');
   const [grade, setGrade] = useState('');
+  const [phone, setPhone] = useState('');
+  const [type, setType] = useState('')
+  const [school_name, setSchool_name] = useState('')
+  const [activity_branch, setActivity_branch] = useState('');
+  const [school_speciality, setSchool_speciality] = useState('');
+  const [company, setCompany] = useState('')
+  const [company_role, setCompany_role] = useState('');
+  const [experience_years, setExperience_years] = useState('')
+  const [refreshing, setRefreshing] = useState(false); // Pour le refresh
   // console.debug("studentDetails :", studentId) 
   // 
-  // useEffect(() => {
-  //   if (studentDetails?.student) {
-  //     setLastname(studentDetails.student.lastname || '');
-  //     setFirstname(studentDetails.student.firstname || '');
-  //     setGender(studentDetails.student.gender_tr || '');
-  //     setAddress(studentDetails.student.address || '');
-  //     setGrade(studentDetails.student.grade || '');
-  //     setPaymentStatus(studentDetails.student.payment_status_tr || '');
-  //     setPaidAmount(studentDetails.student.paid_amount_tr || '');
-  //     setPrice(studentDetails.student.price || '');
-  //   }
-  // }, [studentDetails]);
+  useEffect(() => {
+    if (studentDetails?.student) {
+      setLastname(studentDetails.student.lastname || '');
+      setFirstname(studentDetails.student.firstname || '');
+      setGender(studentDetails.student.gender_tr || '');
+      setAddress(studentDetails.student.address || '');
+      setGrade(studentDetails.student.grade || '');
+      setPaymentStatus(studentDetails.student.payment_status_tr || '');
+      setPaidAmount(studentDetails.student.paid_amount_tr || '');
+      setPrice(studentDetails.student.price || '');
+
+      setType(studentDetails.student.type || '');
+      setSchool_name(studentDetails.student.school_name || '');
+      setActivity_branch(studentDetails.student.activity_branch || '');
+      setSchool_speciality(studentDetails.student.school_speciality || '');
+      setCompany(studentDetails.student.company || '');
+      setCompany_role(studentDetails.student.company_role || '');
+      setExperience_years(studentDetails.student.experience_years || '');
+    }
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true); // Activer l'animation de rafraîchissement
+    try {
+      // Récupérer à nouveau les étudiants et les formations
+      await fetchPayments();
+    } catch (error) {
+      console.error('Erreur lors du rafraîchissement:', error);
+    } finally {
+      setRefreshing(false); // Désactiver l'animation de rafraîchissement
+    }
+  };
 
   const fetchFormations = async () => {
     try {
@@ -59,19 +88,27 @@ export default function Index() {
         Alert.alert('Erreur', 'Vous devez être connecté pour récupérer les formations.');
         return;
       }
-
+  
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       };
-
-      const response = await axios.get(API_URL, config);
-
+  
+      const response = await axios.get('https://students.aic.cm/api/v1/formations', config);
+  
       if (response.status === 200 && response.data && response.data.data) {
         const formationsData = response.data.data;
-        console.debug('API_URL:', response.data.data);
-        setFormations(formationsData);
+  
+        if (Array.isArray(formationsData)) {
+          const formattedFormations = formationsData.map(formation => ({
+            label: formation.name + "   " + "  " + formation.price + " Frs"  || 'Nom inconnu',
+            value: (formation.id || '').toString()
+          }));
+          setFormations(formattedFormations);
+        } else {
+          Alert.alert('Erreur', 'Le format des données de formations est invalide.');
+        }
       } else {
         Alert.alert('Erreur', 'Impossible de récupérer les formations. Format de réponse inattendu.');
       }
@@ -79,46 +116,69 @@ export default function Index() {
       Alert.alert('Erreur', `Une erreur est survenue lors de la récupération des formations: ${error.message}`);
     }
   };
-  useEffect(() => {
-    fetchFormations();
-  }, []);
 
   const handleAddPayment = async () => {
     try {
+      // Récupération du token d'accès
       const token = await AsyncStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('Token manquant');
+      }
+  
+      // Configuration de l'authentification
       const config = {
         headers: { Authorization: `Bearer ${token}` },
       };
-  
+      setLoading(true);
       const response = await axios.post(
-        `https://students.aic.cm/api/v1/students/${selectedStudent.id}/payments`,
+        `https://students.aic.cm/api/v1/students/${studentId}/payments`,
         {
-          formation_id: selectedFormation.value,
-          paid_amount: parseFloat(paidAmount),
+          formation_id: formationId,  // Assurez-vous que selectedFormation.value contient bien l'ID de la formation
+          paid_amount: parseFloat(paidAmount),    // Convertit le montant payé en nombre
         },
         config
       );
   
-      console.log('Paiement ajouté:', response.data);
+      console.debug("Réponse de l'API :", response.data); // Debug pour afficher la réponse API
+  
       return response.data;
+  
     } catch (error) {
-      console.error('Erreur lors de l\'ajout du paiement:', error);
+      // Gestion de l'erreur pour aider au débogage
+      if (error.response) {
+        console.error('Erreur de l\'API :', error.response.data);
+      } else {
+        console.error('Erreur réseau ou autre :', error.message);
+      }
+  
       throw error;
+    } finally{
+      setLoading(false);
     }
   };
-
+  
+  // Fonction de validation du paiement avant de l'envoyer à l'API
   const handleValidatePayment = async () => {
+    // Vérification que l'étudiant sélectionné est valide
+    if (!studentId) {
+      Alert.alert('Erreur', 'Aucun étudiant sélectionné. Veuillez sélectionner un étudiant.');
+      return;
+    }
+  
+    // Vérification que la formation est sélectionnée
     if (!selectedFormation) {
       Alert.alert('Erreur', 'Veuillez sélectionner une formation.');
       return;
     }
   
+    // Vérification de la validité du montant payé
     if (!paidAmount || isNaN(parseFloat(paidAmount))) {
       Alert.alert('Erreur', 'Veuillez entrer un montant valide.');
       return;
     }
   
     try {
+      // Appel de la fonction pour ajouter le paiement
       await handleAddPayment();
       Alert.alert('Succès', 'Paiement ajouté avec succès.');
       closeModal();
@@ -155,7 +215,6 @@ export default function Index() {
       const API_URL = `https://students.aic.cm/api/v1/students?formation_id=${formationId}`;
 
       const response = await axios.get(API_URL, config);
-        // console.log("response de fetchStudents :", response.data.data);
       if (response.status === 200 && response.data && response.data.data) {
         const studentsData = response.data.data;
         setStudents(studentsData);
@@ -184,9 +243,9 @@ export default function Index() {
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
-      await axios.delete(`https://students.aic.cm/api/v1/students/${selectedStudent.id}`, config);
+      await axios.delete(`https://students.aic.cm/api/v1/students/${studentId}`, config);
       Alert.alert('Succès', 'Étudiant supprimé avec succès.');
-      setStudents(students.filter(student => student.id !== selectedStudent.id)); // Retirer de la liste locale
+      setStudents(students.data.filter(student => student.id !== studentId)); // Retirer de la liste locale
       closeBottomSheet();
     } catch (error) {
       Alert.alert('Erreur', 'Une erreur est survenue lors de la suppression.');
@@ -205,10 +264,11 @@ export default function Index() {
         gender,
         address,
         grade,
+        type,
       };
-      await axios.put(`https://students.aic.cm/api/v1/students/${selectedStudent.id}`, updatedStudent, config);
+      await axios.put(`https://students.aic.cm/api/v1/students/${studentId}`, updatedStudent, config);
       Alert.alert('Succès', `Étudiant modifié avec succès.`);
-      setStudents(students.map(student => student.id === selectedStudent.id ? { ...student, ...updatedStudent } : student));
+      setStudents(students.data.map(student => student.id === studentId ? { ...student, ...updatedStudent } : student));
       closeBottomSheet();
     } catch (error) {
       Alert.alert('Erreur', 'Une erreur est survenue lors de la modification.');
@@ -216,32 +276,6 @@ export default function Index() {
   };
 
 
-
-  // const filterItems = () => {
-  //   if (selectedCategory === 0) {
-  //     setFilteredItems(payments);
-  //   } else {
-  //     const statusMap = {
-  //       1: null,
-  //       2: 'PARTIALLY_PAID',
-  //       3: 'PAID'
-  //     };
-  //     const selectedStatus = statusMap[selectedCategory];
-  //     const filteredData = payments.data.filter(item => 
-  //       selectedStatus === null 
-  //         ? item.student.payment_status === null 
-  //         : item.student.payment_status === selectedStatus
-  //     );
-  //     setFilteredItems(filteredData);
-  //   }
-  //   console.log("Éléments filtrés:", filteredItems);
-  // };
-  
-  // useEffect(() => {
-  //   filterItems();
-  // }, [selectedCategory, students]);
-
-    // Filtrer les éléments en fonction de la catégorie sélectionnée
     const filterItems = () => {
       if (selectedCategory === 0) {
         setFilteredItems(payments);
@@ -254,22 +288,10 @@ export default function Index() {
       filterItems();
     }, [selectedCategory, payments]);
   
-  
 
-  // const fetchPayments = async () => {
-  //   try {
-  //     const token = await AsyncStorage.getItem('access_token');
-  //     const config = {
-  //       headers: { Authorization: `Bearer ${token}` }
-  //     };
-  //     const response = await axios.get(`https://students.aic.cm/api/v1/students/${studentId}/payments`, config);
-  //     setPayments(response.data); 
-  //     console.debug('Paiements response data:', response.data);
-  //   } catch (error) {
-  //     console.error('Erreur lors de la récupération des paiements:', error);
-  //   }
-  // }; 
-  
+    useEffect(() => {
+      fetchFormations();
+    }, []);
   const fetchPayments = async () => {
     try {
       const token = await AsyncStorage.getItem('access_token');
@@ -288,7 +310,6 @@ export default function Index() {
 
       // Extraire uniquement le tableau de paiements
       setPayments(paymentResponse.data.data || []);
-      console.log("Paiements reponse :", paymentResponse.data);
     } catch (error) {
       console.error("Erreur de chargement des paiements", error);
     } finally {
@@ -299,80 +320,44 @@ export default function Index() {
   useEffect(() => {
     fetchPayments();
   }, []);
-  
-    // const handleDeletePayment = async (paymentId) => {
-    //   try {
-    //     await axios.delete(`https://students.aic.cm/api/v1/students/${selectedStudent.id}/payments/${paymentId}`);
-    //     Alert.alert('Succès', 'Paiement supprimé avec succès.');
-    //     fetchPayments(selectedStudent.id); // Rafraîchir les paiements après la suppression
-    //   } catch (error) {
-    //     console.error('Erreur lors de la suppression du paiement:', error);
-    //     Alert.alert('Erreur', 'Une erreur est survenue lors de la suppression du paiement.');
-    //   }
-    // };
-  // function renderMenu() {
-  //   return (
-  //     <>
-  //       <StatusBar style="dark" />
-  //       <View style={{ alignItems: 'center' }}>
-  //         <FlatList
-  //           data={dataCategories}
-  //           horizontal
-  //           showsHorizontalScrollIndicator={false}
-  //           keyExtractor={item => item.id.toString()}
-  //           renderItem={({ item }) => (
-  //             <TouchableOpacity
-  //               style={{
-  //                 padding: 8,
-  //                 paddingHorizontal: 14,
-  //                 backgroundColor: selectedCategory === item.id ? COLORS.primary : COLORS.gray10,
-  //                 borderRadius: 20,
-  //                 alignItems: 'center',
-  //                 marginHorizontal: 4,
-  //               }}
-  //               onPress={() => setSelectedCategory(item.id)}
-  //             >
-  //               <Text style={{ fontSize: 16, color: selectedCategory === item.id ? COLORS.white : COLORS.black }}>
-  //                 {item.name}
-  //               </Text>
-  //             </TouchableOpacity>
-  //           )}
-  //         />
-  //       </View>
-  //     </>
-  //   );
-  // }
+
  
-  function renderMenu() {
-    return (
-      <View style={{ alignItems: 'center' }}>
-        <FlatList
-          data={dataCategories}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={{
-                padding: 8,
-                paddingHorizontal: 14,
-                backgroundColor: selectedCategory === item.id ? 'blue' : 'grey',
-                borderRadius: 20,
-                alignItems: 'center',
-                marginHorizontal: 4,
-              }}
-              onPress={() => setSelectedCategory(item.id)}
-            >
-              <Text style={{ fontSize: 16, color: 'white' }}>{item.name}</Text>
-            </TouchableOpacity>
-          )}
-        />
-      </View>
-    );
-  }
+  const renderMenu = () => (
+    <View style={{ alignItems: 'center' }}>
+      <FlatList
+        data={dataCategories}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={{
+              padding: 8,
+              paddingHorizontal: 14,
+              backgroundColor: selectedCategory === item.id ? 'blue' : COLORS.gray20,
+              borderRadius: 20,
+              alignItems: 'center',
+              marginHorizontal: 4,
+            }}
+            onPress={() => setSelectedCategory(item.id)} // Mettre à jour la catégorie sélectionnée
+          >
+            <Text style={{ fontSize: 16, fontWeight: "bold", color: selectedCategory === item.id ? 'white' : 'black' }}>
+              {item.name}
+            </Text>
+          </TouchableOpacity>
+        )}
+      />
+    </View>
+  );
 
   const renderPayments = () => (
     <FlatList
+    refreshControl={
+      <RefreshControl
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+      />
+    }
       data={payments}
       keyExtractor={(item) => item.id.toString()}
       renderItem={({ item }) => (
@@ -436,14 +421,27 @@ export default function Index() {
              onChangeText={setGrade}
              placeholder="Classe"
            />
+          <EditableInfoItem
+             icon="male-female-outline"
+             label="type personne"
+             value={type}
+             onChangeText={setType}
+             placeholder="type"
+           />
+          
        </>
      ) : (
        <>        
+        <ScrollView>
            <InfoItem icon="accessibility-outline" label="Nom Etudiant" value={studentDetails.student.lastname} />
            <InfoItem icon="person-outline" label="Prénom Etudiant" value={studentDetails.student.firstname} />
            <InfoItem icon="male-female-outline" label="Sexe Etudiant" value={studentDetails.student.gender_tr} />
            <InfoItem icon="location-outline" label="Adresse Etudiant" value={studentDetails.student.address} />
            <InfoItem icon="school-outline" label="Niveau d'étude" value={studentDetails.student.grade} />
+
+           <InfoItem icon="male-female-outline" label="Sexe Etudiant" value={studentDetails.student.type} />
+
+        </ScrollView>
        </>
      )}
      <View style={styles.buttonContainer}>
@@ -489,7 +487,7 @@ export default function Index() {
           <Ionicons name='arrow-back-outline' size={24} color={COLORS.primary} onPress={() => router.back()} />
         </View>
           <Text style={[styles.header, { top: -8 }]}>
-          {lastname} {firstname} ggggg
+          {lastname} {firstname}
           </Text>
     
       </View>
@@ -547,7 +545,7 @@ export default function Index() {
         </TouchableOpacity>
          
         <TouchableOpacity style={styles.button} onPress={handleValidatePayment}>
-          <Text style={styles.buttonText}>Valider</Text>
+          <Text style={styles.buttonText}>{loading ? <ActivityIndicator size="small" color="#fff" />  : "Valider "} </Text>
         </TouchableOpacity>
       </View>      
     </View>

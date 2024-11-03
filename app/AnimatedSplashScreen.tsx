@@ -64,7 +64,7 @@ const AnimatedSplashScreen = ({ onAnimationComplete }) => {
 
       {/* Logo avec animation */}
       <Animated.Image
-        source={require('../assets/images/aic.png')}
+        source={require('../assets/images/logo.png')}
         style={[
           styles.logo,
           {

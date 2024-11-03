@@ -39,7 +39,6 @@ const Home = () => {
 
       if (response.status === 200 && response.data && response.data.data) {
         const formationsData = response.data.data;
-        console.debug('API_URL:', response.data);
         setFormations(formationsData);
       } else {
         Alert.alert('Erreur', 'Impossible de récupérer les formations. Format de réponse inattendu.');

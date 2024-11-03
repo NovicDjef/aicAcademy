@@ -149,7 +149,7 @@ export default function LoginScreen() {
             <>
               <View style={styles.logoContainer}>
                 <Image
-                  source={require('../assets/images/logo1.png')}
+                  source={require('../assets/images/logo.png')}
                   style={styles.logo}
                   resizeMode="contain"
                 />
@@ -206,15 +206,37 @@ export default function LoginScreen() {
               </View>
             </>
           ) : (
+            <><Text style={styles.title}>Vous êtes connecté !</Text>
             <View style={styles.loggedInContainer}>
-              <Text style={styles.title}>Vous êtes connecté !</Text>
-              <TouchableOpacity 
-                style={styles.loginButton} 
-                onPress={handleLogout}
-              >
-                <Text style={styles.loginButtonText}>Déconnexion</Text>
-              </TouchableOpacity>
-            </View>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: COLORS.secondary,
+                    borderRadius: 14,
+                    padding: 10,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    elevation: 2,
+                    shadowColor: '#000',
+                  }}
+                  onPress={handleLogout}
+                >
+                  <Text style={styles.loginButtonText}>Déconnexion</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: COLORS.primary,
+                    borderRadius: 14,
+                    padding: 10,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    elevation: 2,
+                    shadowColor: '#000',
+                  }}
+                  onPress={() => router.replace('/Home')}
+                >
+                  <Text style={styles.loginButtonText}>Rester connecté</Text>
+                </TouchableOpacity>
+              </View></>
           )}
         </ScrollView>
         <View>
@@ -244,8 +266,8 @@ const styles = StyleSheet.create({
     marginBottom: -100,
   },
   logo: {
-    width: 350,
-    height: 350,
+    width: 250,
+    height: 250,
   },
   formContainer: {
     flex: 1,
@@ -254,7 +276,8 @@ const styles = StyleSheet.create({
   },
   loggedInContainer: {
     flex: 1,
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
   title: {
@@ -262,7 +285,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     color: COLORS.primary,
-    marginBottom: 16,
+    marginTop: 66,
   },
   subtitle: {
     fontSize: 16,

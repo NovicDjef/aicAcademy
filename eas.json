@@ -17,13 +17,15 @@
     "preview3": {
       "developmentClient": true
     },
-
     "development": {
       "developmentClient": true,
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {

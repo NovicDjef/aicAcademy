@@ -16,7 +16,7 @@ const dataCategories = [
   { id: 2, name: 'Partiellement payé' },
   { id: 3, name: 'Payé' },
 ];
-
+const API_URL = 'https://students.aic.cm/api/v1/formations';
 export default function Index() {
   const { formationId, formationName } = useLocalSearchParams(); 
 
@@ -33,8 +33,6 @@ export default function Index() {
   const [formations, setFormations] = useState([]); 
   const [selectedFormation, setSelectedFormation] = useState(null); 
   const [refreshing, setRefreshing] = useState(false); // Pour le refresh
-
-
 
     const [lastname, setLastname] = useState('');
     const [firstname, setFirstname] = useState('');
@@ -54,7 +52,10 @@ export default function Index() {
         setRefreshing(false); // Désactiver l'animation de rafraîchissement
       }
     };
-
+    useEffect(() => {
+      fetchFormations();
+    }, []);
+  
     const fetchFormations = async () => {
       try {
         const token = await AsyncStorage.getItem('access_token');
@@ -62,27 +63,18 @@ export default function Index() {
           Alert.alert('Erreur', 'Vous devez être connecté pour récupérer les formations.');
           return;
         }
-    
+  
         const config = {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         };
-    
-        const response = await axios.get(`https://students.aic.cm/api/v1/formations/`, config);
-    
+  
+        const response = await axios.get(API_URL, config);
+  
         if (response.status === 200 && response.data && response.data.data) {
           const formationsData = response.data.data;
-    console.debug('API_URL restddddd:', response.data.data);
-          if (Array.isArray(formationsData)) {
-            const formattedFormations = formationsData.map(formation => ({
-              label: formation.name + "   " + "  " + formation.price + " Frs"  || 'Nom inconnu',
-              value: (formation.id || '').toString()
-            }));
-            setFormations(formattedFormations);
-          } else {
-            Alert.alert('Erreur', 'Le format des données de formations est invalide.');
-          }
+          setFormations(formationsData);
         } else {
           Alert.alert('Erreur', 'Impossible de récupérer les formations. Format de réponse inattendu.');
         }
@@ -107,7 +99,6 @@ export default function Index() {
         config
       );
   
-      console.log('Paiement ajouté:', response.data);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de l\'ajout du paiement:', error);
@@ -185,17 +176,6 @@ export default function Index() {
     fetchStudents();
   }, []);
   
-  const openBottomSheet = (student) => {
-    setSelectedStudent(student);
-    setLastname(student.lastname);
-    setFirstname(student.firstname);
-    setGender(student.gender);
-    setAddress(student.address);
-    setGrade(student.grade);
-    setPhone(student.phone);
-    setIsBottomSheetVisible(true);
-    fetchPayments(student.id); 
-  };
 
   const closeBottomSheet = () => {
     setSelectedStudent(null);
@@ -239,9 +219,6 @@ export default function Index() {
     }
   };
 
-  useEffect(() => {
-    console.log("État actuel des étudiants:", students);
-  }, [students]);
 
 
 // Filtrer les étudiants par formation
@@ -249,7 +226,7 @@ export default function Index() {
 const filterItems = () => {
   if (selectedCategory === 0) {
     // Tous les étudiants
-    setFilteredItems(students);
+    setFilteredItems(students.data);
   } else {
     // Mapper les catégories avec les statuts
     const statusMap = {
@@ -262,147 +239,128 @@ const filterItems = () => {
     // Filtrer les étudiants selon le statut
     const filteredData = students.data?.filter(item =>
       selectedStatus === null
-        ? item.student.payment_status === null
-        : item.student.payment_status === selectedStatus
+        ? item.payment_status === null
+        : item.payment_status === selectedStatus
     );
 
     setFilteredItems(filteredData);
   }
 };
 
-// Appliquer le filtre à chaque changement de catégorie ou de liste d'étudiants
 useEffect(() => {
   filterItems();
 }, [selectedCategory, students]);
 
 
-  const fetchPayments = async (studentId) => {
-    try {
-      const token = await AsyncStorage.getItem('access_token');
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
-      const response = await axios.get(`https://students.aic.cm/api/v1/students/${studentId}/payments`, config);
-      setPayments(response.data); // Mettre à jour la liste des paiements
-    } catch (error) {
-      console.error('Erreur lors de la récupération des paiements:', error);
-    }
-  };
+  // const fetchPayments = async (studentId) => {
+  //   try {
+  //     const token = await AsyncStorage.getItem('access_token');
+  //     const config = {
+  //       headers: { Authorization: `Bearer ${token}` }
+  //     };
+  //     const response = await axios.get(`https://students.aic.cm/api/v1/students/${studentId}/payments`, config);
+  //     setPayments(response.data); // Mettre à jour la liste des paiements
+  //   } catch (error) {
+  //     console.error('Erreur lors de la récupération des paiements:', error);
+  //   }
+  // };
   
-    // const handleDeletePayment = async (paymentId) => {
-    //   try {
-    //     await axios.delete(`https://students.aic.cm/api/v1/students/${selectedStudent.id}/payments/${paymentId}`);
-    //     Alert.alert('Succès', 'Paiement supprimé avec succès.');
-    //     fetchPayments(selectedStudent.id); // Rafraîchir les paiements après la suppression
-    //   } catch (error) {
-    //     console.error('Erreur lors de la suppression du paiement:', error);
-    //     Alert.alert('Erreur', 'Une erreur est survenue lors de la suppression du paiement.');
-    //   }
-    // };
-    const renderMenu = () => (
-      <View style={{ alignItems: 'center' }}>
-        <FlatList
-          data={dataCategories}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={item => item.id.toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={{
-                padding: 8,
-                paddingHorizontal: 14,
-                backgroundColor: selectedCategory === item.id ? 'blue' : 'grey',
-                borderRadius: 20,
-                alignItems: 'center',
-                marginHorizontal: 4,
-              }}
-              onPress={() => setSelectedCategory(item.id)}
-            >
-              <Text style={{ fontSize: 16, color: selectedCategory === item.id ? 'white' : 'black' }}>
-                {item.name}
-              </Text>
-            </TouchableOpacity>
-          )}
-        />
-      </View>
-    );
+  const renderMenu = () => (
+    <View style={{ alignItems: 'center' }}>
+      <FlatList
+        data={dataCategories}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={{
+              padding: 8,
+              paddingHorizontal: 16,
+              backgroundColor: selectedCategory === item.id ? 'blue' : COLORS.gray20,
+              borderRadius: 20,
+              alignItems: 'center',
+              marginHorizontal: 4,
+            }}
+            onPress={() => setSelectedCategory(item.id)} // Mettre à jour la catégorie sélectionnée
+          >
+            <Text style={{ fontSize: 16, fontWeight: "bold", color: selectedCategory === item.id ? 'white' : 'black' }}>
+              {item.name}
+            </Text>
+          </TouchableOpacity>
+        )}
+      />
+    </View>
+  );
   
-  function renderItems() {
-    if (loading) {
-      return <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 50 }} />;
-    }
   
-    if (students.length === 0) {
-      return <Text style={{ textAlign: 'center', marginTop: 50 }}>Aucun étudiant trouvé</Text>;
-    }
-  
-    const formatDateTime = (dateString) => {
-      const date = new Date(dateString); // Crée un objet Date à partir de la chaîne
-    
-      // Formate les valeurs jour, mois, année, heure et minute
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0'); // Les mois commencent à 0, donc +1
-      const year = date.getFullYear();
-    
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-    
-      // Retourne la date et l'heure formatées sous la forme jour-mois-année heure:minute
-      return `${day}-${month}-${year} à ${hours}:${minutes}`;
-    };
-    
-    // Exemple d'utilisation
-    const formattedDateTime = formatDateTime("2024-10-24T22:11:34.000000Z");
-    
-    return (
-      <>
-        <FlatList
-  refreshControl={
-    <RefreshControl
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-    />
+  // Fonction principale de rendu
+function renderItems() {
+  if (loading) {
+    return <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 50 }} />;
   }
-  data={students.data}
-  keyExtractor={item => item.id.toString()}
-  renderItem={({ item }) => (
-    <TouchableOpacity 
-    onPress={() => router.push({
-      pathname: "/InfoUser",
-      params: { studentData: JSON.stringify(item) }
-    })}
-    >
-      <View style={styles.itemContainer}>
-        <View style={styles.itemTextContainer}>
-          <Text style={styles.itemName}>{`${item.student.lastname} ${item.student.firstname}`}</Text>
-          <Text style={styles.itemSubText}>{item.student.grade}</Text>
-          <Text style={styles.itemSubTextSemiBold}>{`${item.student.gender_tr} | ${item.student.address}`}</Text>
-          {item.paid_amount && <Text style={styles.itemAmount}>{`${item.paid_amount} FCFA`}</Text>}
-          <Text>{formattedDateTime}</Text>
-        </View>
-        <View
-          style={[
-            styles.statusContainer,
-            { backgroundColor: getStatusColor(item.payment_status) },
-          ]}
-        >
-          <Text style={[
-            styles.statusText,
-            { color: getStatusTextColor(item.payment_status) }
-          ]}>
-            {item.payment_status_tr || 'Non payé'}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  )}
-/>
 
-        
-       
-        </>
-    );
+  if (students.length === 0) {
+    return <Text style={{ textAlign: 'center', marginTop: 50 }}>Aucun étudiant trouvé</Text>;
   }
+
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString); 
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); 
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}-${month}-${year} à ${hours}:${minutes}`;
+  };
+
+  return (
+    <>
+      <FlatList
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+          />
+        }
+        data={filteredItems}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity 
+            onPress={() => router.push({
+              pathname: "/InfoUser",
+              params: { studentData: JSON.stringify(item) }
+            })}
+          >
+            <View style={styles.itemContainer}>
+              <View style={styles.itemTextContainer}>
+                <Text style={styles.itemName}>{`${item.student.lastname} ${item.student.firstname}`}</Text>
+                <Text style={styles.itemSubText}>{item.student.grade}</Text>
+                <Text style={styles.itemSubTextSemiBold}>{`${item.student.gender_tr} | ${item.student.address}`}</Text>
+                {item.paid_amount && <Text style={styles.itemAmount}>{`${item.paid_amount} FCFA`}</Text>}
+                <Text>{formatDateTime(item.created_at)}</Text>
+              </View>
+              <View
+                style={[
+                  styles.statusContainer,
+                  { backgroundColor: getStatusColor(item.payment_status) },
+                ]}
+              >
+                <Text style={[
+                  styles.statusText,
+                  { color: getStatusTextColor(item.payment_status) }
+                ]}>
+                  {item.payment_status_tr || 'Non payé'}
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        )}
+      />
+    </>
+  );
+}
+
 const getStatusColor = (status) => {
   switch(status) {
     case 'PAID': return '#BCF5CB';
