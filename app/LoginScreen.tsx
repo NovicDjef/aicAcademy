@@ -149,7 +149,7 @@ export default function LoginScreen() {
             <>
               <View style={styles.logoContainer}>
                 <Image
-                  source={require('../assets/images/logo.png')}
+                  source={require('../assets/images/playstore.png')}
                   style={styles.logo}
                   resizeMode="contain"
                 />

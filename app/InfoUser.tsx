@@ -72,7 +72,7 @@ export default function Index() {
   const onRefresh = async () => {
     setRefreshing(true); // Activer l'animation de rafraîchissement
     try {
-      // Récupérer à nouveau les étudiants et les formations
+      // Récupérer à nouveau les candidats et les formations
       await fetchPayments();
     } catch (error) {
       console.error('Erreur lors du rafraîchissement:', error);
@@ -159,9 +159,9 @@ export default function Index() {
   
   // Fonction de validation du paiement avant de l'envoyer à l'API
   const handleValidatePayment = async () => {
-    // Vérification que l'étudiant sélectionné est valide
+    // Vérification que le candidat sélectionné est valide
     if (!studentId) {
-      Alert.alert('Erreur', 'Aucun étudiant sélectionné. Veuillez sélectionner un étudiant.');
+      Alert.alert('Erreur', 'Aucun candidat sélectionné. Veuillez sélectionner un candidat.');
       return;
     }
   
@@ -201,7 +201,7 @@ export default function Index() {
     try {
       const token = await AsyncStorage.getItem('access_token');
       if (!token) {
-        Alert.alert('Erreur', 'Vous devez être connecté pour récupérer les étudiants.');
+        Alert.alert('Erreur', 'Vous devez être connecté pour récupérer les candidats.');
         return;
       }
   
@@ -211,7 +211,7 @@ export default function Index() {
         },
       };
    setLoading(true);
-      // Utilisez formationId pour récupérer les étudiants de la formation spécifique
+      // Utilisez formationId pour récupérer les candidats de la formation spécifique
       const API_URL = `https://students.aic.cm/api/v1/students?formation_id=${formationId}`;
 
       const response = await axios.get(API_URL, config);
@@ -219,10 +219,10 @@ export default function Index() {
         const studentsData = response.data.data;
         setStudents(studentsData);
       } else {
-        Alert.alert('Erreur', 'Impossible de récupérer les étudiants. Format de réponse inattendu.');
+        Alert.alert('Erreur', 'Impossible de récupérer les candidats. Format de réponse inattendu.');
       }
     } catch (error) {
-      Alert.alert('Erreur', `Une erreur est survenue lors de la récupération des étudiants: ${error.message}`);
+      Alert.alert('Erreur', `Une erreur est survenue lors de la récupération des candidats: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -244,7 +244,7 @@ export default function Index() {
         headers: { Authorization: `Bearer ${token}` }
       };
       await axios.delete(`https://students.aic.cm/api/v1/students/${studentId}`, config);
-      Alert.alert('Succès', 'Étudiant supprimé avec succès.');
+      Alert.alert('Succès', 'Candidat supprimé avec succès.');
       setStudents(students.data.filter(student => student.id !== studentId)); // Retirer de la liste locale
       closeBottomSheet();
     } catch (error) {
@@ -267,7 +267,7 @@ export default function Index() {
         type,
       };
       await axios.put(`https://students.aic.cm/api/v1/students/${studentId}`, updatedStudent, config);
-      Alert.alert('Succès', `Étudiant modifié avec succès.`);
+      Alert.alert('Succès', `Candidat modifié avec succès.`);
       setStudents(students.data.map(student => student.id === studentId ? { ...student, ...updatedStudent } : student));
       closeBottomSheet();
     } catch (error) {
@@ -382,34 +382,34 @@ export default function Index() {
     return (
       <>
         <View style={styles.bottomSheetContainer}>
-     <Text style={styles.sheetTitle}>Détails de l'étudiant</Text>
+     <Text style={styles.sheetTitle}>Détails du Candidat</Text>
  
      {isEditing ? (
        <>
          <EditableInfoItem
              icon="accessibility-outline"
-             label="Nom Etudiant"
+             label="Nom Candidat"
              value={lastname}
              onChangeText={setLastname}
              placeholder="Nom"
            />
            <EditableInfoItem
              icon="person-outline"
-             label="Prénom Etudiant"
+             label="Prénom Candidat"
              value={firstname}
              onChangeText={setFirstname}
              placeholder="Prénom"
            />
            <EditableInfoItem
              icon="male-female-outline"
-             label="Sexe Etudiant"
+             label="Sexe Candidat"
              value={gender}
              onChangeText={setGender}
              placeholder="Genre"
            />
            <EditableInfoItem
              icon="location-outline"
-             label="Adresse Etudiant"
+             label="Adresse Candidat"
              value={address}
              onChangeText={setAddress}
              placeholder="Adresse"
@@ -422,8 +422,8 @@ export default function Index() {
              placeholder="Classe"
            />
           <EditableInfoItem
-             icon="male-female-outline"
-             label="type personne"
+             icon="medal-outline"
+             label="Profession"
              value={type}
              onChangeText={setType}
              placeholder="type"
@@ -433,13 +433,13 @@ export default function Index() {
      ) : (
        <>        
         <ScrollView>
-           <InfoItem icon="accessibility-outline" label="Nom Etudiant" value={studentDetails.student.lastname} />
-           <InfoItem icon="person-outline" label="Prénom Etudiant" value={studentDetails.student.firstname} />
-           <InfoItem icon="male-female-outline" label="Sexe Etudiant" value={studentDetails.student.gender_tr} />
-           <InfoItem icon="location-outline" label="Adresse Etudiant" value={studentDetails.student.address} />
+           <InfoItem icon="accessibility-outline" label="Nom Candidat" value={studentDetails.student.lastname} />
+           <InfoItem icon="person-outline" label="Prénom Candidat" value={studentDetails.student.firstname} />
+           <InfoItem icon="male-female-outline" label="Sexe Candidat" value={studentDetails.student.gender_tr} />
+           <InfoItem icon="location-outline" label="Adresse Candidat" value={studentDetails.student.address} />
            <InfoItem icon="school-outline" label="Niveau d'étude" value={studentDetails.student.grade} />
 
-           <InfoItem icon="male-female-outline" label="Sexe Etudiant" value={studentDetails.student.type} />
+           <InfoItem icon="medal-outline" label="Profession" value={studentDetails.student.type} />
 
         </ScrollView>
        </>

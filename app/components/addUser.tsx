@@ -142,7 +142,7 @@ const handleSubmit = async () => {
   try {
     const token = await AsyncStorage.getItem('access_token');
     if (!token) {
-      Alert.alert('Erreur', 'Vous devez être connecté pour ajouter un étudiant.');
+      Alert.alert('Erreur', 'Vous devez être connecté pour ajouter un candidat.');
       return;
     }
 
@@ -156,7 +156,7 @@ const handleSubmit = async () => {
     const response = await axios.post('https://students.aic.cm/api/v1/students', userData, config);
     console.debug('Reponse:', response.data);
     if (response.status === 200) {
-      Alert.alert('Succès', 'Étudiant enregistré avec succès.');
+      Alert.alert('Succès', 'Candidat enregistré avec succès.');
       router.push('/Enregistrement');
     } else {
       Alert.alert('Erreur', `Une erreur est survenue lors de l'enregistrement. Statut: ${response.status}`);

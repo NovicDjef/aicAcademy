@@ -401,7 +401,7 @@ const getStatusTextColor = (status) => {
 
         <BottomSheet isVisible={isBottomSheetVisible} onBackdropPress={closeBottomSheet}>
   <View style={styles.bottomSheetContainer}>
-    <Text style={styles.sheetTitle}>Détails de l'étudiant</Text>
+    <Text style={styles.sheetTitle}>Détails du candidat</Text>
 
     {/* Si l'utilisateur est en mode édition, afficher les champs de modification */}
     {isEditing ? (
